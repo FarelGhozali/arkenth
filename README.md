@@ -75,7 +75,62 @@ Run the compiled executable with the required flags:
 
 ### Output
 
-The application generates two files:
+The application generates two files by default in your current directory:
 
-- `<output-report>.json`: A structured JSON representation of the findings.
-- `<output-report>.md`: A human-readable Markdown summary.
+#### 1. JSON Report (`<output-report>.json`)
+
+A structured JSON file ideal for parsing by other tools or CI/CD pipelines. It contains:
+
+- `target_url`: The initial URL scanned.
+- `scanned_urls`: A complete list of all internal pages visited during the crawl.
+- `network_findings`: Array of failed HTTP requests (status >= 400).
+- `js_findings`: Array of JavaScript console errors and warnings.
+- `vulnerabilities`: Array of captured crashes or unhandled exceptions from the active fuzzing module.
+
+#### 2. Markdown Report (`<output-report>.md`)
+
+A human-readable summary that is perfectly formatted for reading or sharing with the team. It groups findings into clear sections:
+
+- **Scanned URLs**: Lists all successfully crawled paths.
+- **Network Findings**: Highlights broken links or failed API calls.
+- **JS Console Findings**: Shows client-side scripting errors.
+- **Vulnerabilities**: Details the exact payload and form that caused a crash or unexpected error.
+
+---
+
+## 🏗️ Architecture & Modules
+
+The tool is built with modularity in mind, making it easy to extend or customize:
+
+- **`config`**: Handles parsing of CLI arguments and sets up the scanning parameters.
+- **`crawler`**: A BFS (Breadth-First Search) spider that navigates the target application. It extracts `href` links from the DOM and recursively follows internal links up to the specified `--depth`, avoiding infinite loops by tracking visited URLs.
+- **`tester`**: The core QA engine containing two sub-modules:
+  - **Passive Monitors**: Hooks into Playwright's page events (`OnConsole`, `OnResponse`, `OnRequestFailed`) to silently observe the site's behavior during normal navigation.
+  - **Active Fuzzer**: Locates all `<form>` tags and input fields. It injects a suite of predefined payloads (e.g., `-1`, emojis, max length strings, basic XSS `<script>alert(1)</script>`, and SQLi `' OR 1=1 --`) and attempts to submit the forms, monitoring the page for unhandled exceptions or crashes.
+- **`reporter`**: Aggregates all findings into structured structs and manages the robust export to JSON and Markdown.
+
+---
+
+## 💡 Advanced Usage Examples
+
+### 1. Shallow Scan (Quick Check)
+
+Run a quick test on the homepage without following any links (Depth 0).
+
+```bash
+./web-qa --target-url="https://example.com" --depth=0 --output-report="quick_check"
+```
+
+### 2. Deep Application Scan
+
+Crawl deep into the application (e.g., Depth 3) to test internal pages and forms. _Note: Deep scans can take significantly longer._
+
+```bash
+./web-qa --target-url="https://example.com" --depth=3 --output-report="deep_scan"
+```
+
+---
+
+## 🛡️ Disclaimer
+
+This tool is intended for **authorized QA testing and security auditing only**. Do not use it against applications or websites you do not own or do not have explicit permission to test, as active fuzzing may cause data corruption or trigger security alerts.

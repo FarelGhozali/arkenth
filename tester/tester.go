@@ -38,7 +38,7 @@ func SetupPassiveMonitors(page playwright.Page, rep *reporter.Report) {
 	page.OnRequestFailed(func(request playwright.Request) {
 		errText := ""
 		if request.Failure() != nil {
-			errText = request.Failure().ErrorText
+			errText = request.Failure().Error()
 		}
 		rep.AddNetworkFinding(reporter.NetworkFinding{
 			URL:    request.URL(),
