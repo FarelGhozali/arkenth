@@ -52,7 +52,10 @@ func (c *Crawler) crawl(targetURL string, currentDepth int) error {
 	log.Printf("Crawling: %s (Depth: %d)", cleanURL, currentDepth)
 
 	// Create a new browser context for each unique URL crawl to isolate state somewhat
-	context, err := c.Browser.NewContext()
+	// IgnoreHttpsErrors is added so localhost with self-signed certs won't crash
+	context, err := c.Browser.NewContext(playwright.BrowserNewContextOptions{
+		IgnoreHttpsErrors: playwright.Bool(true),
+	})
 	if err != nil {
 		return err
 	}
