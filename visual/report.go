@@ -9,8 +9,7 @@ import (
 
 // GenerateRegressionReport scans the baseline and current directories for matching images,
 // runs the differ algorithm, and generates the markdown report.
-func GenerateRegressionReport(baselineDir, currentDir, reportFile string) error {
-	diffDir := "./proofs/diff"
+func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile string) error {
 	os.MkdirAll(diffDir, 0755)
 
 	f, err := os.Create(reportFile)

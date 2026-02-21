@@ -111,17 +111,17 @@ Perintah ini akan menyuruh bot berjalan-jalan dengan Sangat Sopan (Tanpa meretas
 ./web-qa baseline --target="https://example.com" --depth=2
 ```
 
-_Barang bukti foto murni akan disimpan ke folder: `proofs/baseline/`_
+_Barang bukti foto murni akan secara otomatis dikelompokkan ke folder harian: `proofs/<DD-MM-YYYY>/baseline/`_
 
 ### 3. `compare` - The Visual Regression Engine
 
-Kapanpun tim _developer_ Anda mencurigai perubahan kode `CSS/Frontend` merusak tampilan, jalankan kode ini! Ia akan mencocokkan kondisi website hari ini dengan foto _Baseline_ yang Anda simpan di mode sebelumnya.
+Kapanpun tim _developer_ Anda mencurigai perubahan kode `CSS/Frontend` merusak tampilan, jalankan kode ini! Ia akan mencocokkan kondisi website hari ini dengan histori foto _Baseline_ Anda. Secara otomatis program akan membandingkannya dengan _baseline_ di hari yang sama, namun Anda dapat merujuk ke tanggal _baseline_ masa lalu melalui parameter `--baseline-date`.
 
 ```bash
-./web-qa compare --target="https://example.com" --depth=2
+./web-qa compare --target="https://example.com" --depth=2 --baseline-date="22-02-2026"
 ```
 
-_Hasil perhitungan pergeseran visualnya dicetak ke `visual_regression_report.md` beserta foto kemerah-merahannya di `proofs/diff/`_.
+_Hasil perhitungan pergeseran visualnya dicetak ke `visual_regression_report.md` beserta foto kemerah-merahannya di folder hari ini: `proofs/<DD-MM-YYYY>/diff/`_.
 
 ### 🚩 Kumpulan Flags Global Tersedia:
 
@@ -143,10 +143,10 @@ Setiap kali bot selesai mengemban misinya, Anda akan meraup sekumpulan emas Data
 1. **`qa_audit_report.md`** : Buku Suci Laporan Utama. Terbagi atas ringkasan jumlah laman yang ditelusuri (![Crawl Map]), Log Kesalahan Jaringan Rinci (Daftar API yang ambruk dan mati), dan Bug-Bug Kritis. Khusus bug fungsionalitas, akan ada rincian tabel _Steps-To-Reproduce_ (Aksi tombol mana yang membuat aplikasi Anda rusak).
 2. **`network_anomalies.json`** : Basis data mentah berformat JSON bagi Anda yang ingin membuat skrip pipa otomatis (_CI/CD_) untuk sekadar membaca rekap kesalahan HTTP/POST.
 3. **`visual_regression_report.md`** : Laporan kembaran. Ini HANYA dicetak bila perintah `compare` dipanggil. Memamerkan daftar persentase (%) kerusakan layout per halaman lengkap dengan tabel foto rontgen visual-nya.
-4. **Folder `./proofs/`** : Laci barang-bukti.
-   - `proofs/crash_X.png`: Saksi bisu letak tombol pemicu kepanikan Java Script.
-   - `proofs/view_X.png`: Sketsa muka web di setiap halaman.
-   - `proofs/baseline/` & `proofs/diff/`: Repositori operasi tata-letak (_Visual testing_).
+4. **Folder `./proofs/<DD-MM-YYYY>/`** : Laci barang-bukti yang **sekarang otomatis dikelompokkan langsung berdasarkan tanggal sesi pelacakan** (Format _DD-MM-YYYY_), sehingga tangkapan layar web harian Anda tidak lagi menumpuk dan tercampur menjadi satu.
+   - `proofs/<DD-MM-YYYY>/scan/crash_X.png`: Saksi bisu letak tombol pemicu kepanikan Java Script.
+   - `proofs/<DD-MM-YYYY>/scan/view_X.png`: Sketsa muka web di setiap halaman.
+   - `proofs/<DD-MM-YYYY>/baseline/` & `.../current/` & `.../diff/`: Repositori log operasi tata-letak (_Visual testing_).
 
 ---
 

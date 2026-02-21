@@ -36,8 +36,8 @@ func NewSpider(cfg *config.AppConfig) *Spider {
 		Report:      rep,
 		Visited:     make(map[string]bool),
 		Fuzzer:      NewFuzzer(rep),
-		ProofDir:    "./proofs", // default
-		SkipFuzzing: false,      // default
+		ProofDir:    fmt.Sprintf("./proofs/%s/scan", time.Now().Format("02-01-2006")),
+		SkipFuzzing: false,
 	}
 }
 

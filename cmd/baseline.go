@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"time"
 	"web-qa-automation/crawler"
 
 	"github.com/spf13/cobra"
@@ -16,8 +18,9 @@ var baselineCmd = &cobra.Command{
 		AppConfig.FastMode = true // Avoid heavy dynamic elements changing between snapshots
 		spider := crawler.NewSpider(AppConfig)
 
-		// Setup distinct folder for baselining
-		spider.ProofDir = "./proofs/baseline"
+		// Setup distinct folder by date for baselining
+		dateStr := time.Now().Format("02-01-2006")
+		spider.ProofDir = fmt.Sprintf("./proofs/%s/baseline", dateStr)
 
 		// Important: we don't want fuzzing during visual tests, just pure rendering
 		spider.SkipFuzzing = true

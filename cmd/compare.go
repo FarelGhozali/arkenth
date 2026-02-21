@@ -1,12 +1,16 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
+	"time"
 	"web-qa-automation/crawler"
 	"web-qa-automation/visual"
 
 	"github.com/spf13/cobra"
 )
+
+var baselineDate string
 
 var compareCmd = &cobra.Command{
 	Use:   "compare",
@@ -17,7 +21,8 @@ var compareCmd = &cobra.Command{
 		AppConfig.FastMode = true
 		spider := crawler.NewSpider(AppConfig)
 
-		spider.ProofDir = "./proofs/current"
+		dateStr := time.Now().Format("02-01-2006")
+		spider.ProofDir = fmt.Sprintf("./proofs/%s/current", dateStr)
 		spider.SkipFuzzing = true
 
 		err := spider.Run()
@@ -27,7 +32,13 @@ var compareCmd = &cobra.Command{
 
 		// Proceed to Visual Diffing Engine
 		log.Println("Navigating DOM structural diffing...")
-		err = visual.GenerateRegressionReport("./proofs/baseline", "./proofs/current", "visual_regression_report.md")
+		bDate := baselineDate
+		if bDate == "" {
+			bDate = dateStr
+		}
+		baselineDir := fmt.Sprintf("./proofs/%s/baseline", bDate)
+		diffDir := fmt.Sprintf("./proofs/%s/diff", dateStr)
+		err = visual.GenerateRegressionReport(baselineDir, spider.ProofDir, diffDir, "visual_regression_report.md")
 		if err != nil {
 			log.Fatalf("Failed generating visual report: %v", err)
 		}
@@ -37,5 +48,6 @@ var compareCmd = &cobra.Command{
 }
 
 func init() {
+	compareCmd.Flags().StringVar(&baselineDate, "baseline-date", "", "Date of the baseline to compare against (DD-MM-YYYY). Defaults to today.")
 	rootCmd.AddCommand(compareCmd)
 }
