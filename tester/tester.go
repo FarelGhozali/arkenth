@@ -57,62 +57,53 @@ var fuzzPayloads = []string{
 	"' OR 1=1 --",
 }
 
-// FuzzPage actively interacts with the page, trying edge cases in form fields.
+// FuzzPage actively interacts with the page, trying edge cases across ALL inputs (even those without <form> tags).
 func FuzzPage(page playwright.Page, rep *reporter.Report, originalURL string) {
-	forms, err := page.Locator("form").All()
-	if err != nil {
-		log.Printf("Error finding forms on %s: %v", originalURL, err)
-		return
-	}
+	log.Printf("Starting aggressive fuzzing on ALL inputs for %s...", originalURL)
 
-	if len(forms) == 0 {
-		return
-	}
-
-	log.Printf("Found %d form(s) on %s, starting fuzzing...", len(forms), originalURL)
-
-	for i := 0; i < len(forms); i++ {
-		for _, payload := range fuzzPayloads {
-			// Restore the original page state to properly access the form for each payload
-			_, err := page.Goto(originalURL, playwright.PageGotoOptions{
-				WaitUntil: playwright.WaitUntilStateDomcontentloaded,
-			})
-			if err != nil {
-				continue
-			}
-
-			// Re-query the form elements since DOM might have re-loaded
-			formLocators, err := page.Locator("form").All()
-			if err != nil || len(formLocators) <= i {
-				continue
-			}
-
-			form := formLocators[i]
-			inputs, err := form.Locator("input:not([type='hidden']):not([type='submit']), textarea").All()
-			if err != nil || len(inputs) == 0 {
-				continue
-			}
-
-			// Try to fill all applicable fields
-			for _, input := range inputs {
-				_ = input.Fill(payload)
-			}
-
-			// Submit the form
-			submitBtns, err := form.Locator("button[type='submit'], input[type='submit']").All()
-			if err == nil && len(submitBtns) > 0 {
-				err = submitBtns[0].Click()
-				if err != nil {
-					log.Printf("Error clicking submit on form %d with payload %s: %v", i, payload, err)
-				}
-			} else {
-				// Evaluate simple submit if no button
-				_, _ = form.Evaluate("form => form.submit()", nil)
-			}
-
-			// Wait for potential navigation or error throwing
-			page.WaitForTimeout(1000)
+	for _, payload := range fuzzPayloads {
+		// Restore the original page state to properly access elements for each payload
+		_, err := page.Goto(originalURL, playwright.PageGotoOptions{
+			WaitUntil: playwright.WaitUntilStateDomcontentloaded,
+		})
+		if err != nil {
+			continue
 		}
+
+		// Inject an aggressive JS script that fills ALL raw inputs in the DOM and clicks every button.
+		// This bypasses the need for archaic <form> tags.
+		fuzzScript := `(payload) => {
+			let inputs = document.querySelectorAll("input:not([type='hidden']):not([type='submit']), textarea");
+			let filled = 0;
+			
+			for (let i of inputs) {
+				try {
+					i.value = payload;
+					i.dispatchEvent(new Event('input', { bubbles: true }));     // For React/Vue
+					i.dispatchEvent(new Event('change', { bubbles: true }));
+					filled++;
+				} catch (e) {}
+			}
+
+			// If we filled something, let's just click EVERY button aggressively to trigger submitting
+			if (filled > 0) {
+				let buttons = document.querySelectorAll("button, input[type='submit'], input[type='button'], .btn");
+				for (let btn of buttons) {
+					try {
+						btn.click();
+					} catch (e) {}
+				}
+			}
+			return filled;
+		}`
+
+		_, err = page.Evaluate(fuzzScript, payload)
+		if err != nil {
+			log.Printf("Error aggressively fuzzing inputs on %s with payload %s: %v", originalURL, payload, err)
+		}
+
+		// Wait briefly to allow potential SPA AJAX requests or navigation to fire before the next payload
+		page.WaitForTimeout(2000)
 	}
 }
 
