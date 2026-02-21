@@ -24,13 +24,14 @@ Dilengkapi dengan `page.Route()` interception, jika Anda menggunakan bendera `--
 - Pemblokiran _Media_ kelas berat (.jpg, .png. .mp4, tipe _font_).
 - Meningkatkan kecepatan _scanning_ hingga 3x lipat pada mode non-visual.
 
-### 3. 💥 Advanced Active Fuzzing & Rage Clicks
+### 3. 💥 Advanced Security & Token Fuzzing
 
-CLI ini tidak hanya sekadar melihat halaman web. Pada mode _scan_ normal, ia akan masuk ke fase "Penyerangan":
+CLI ini tidak hanya sekadar melihat halaman web. Pada mode `scan` normal, ia akan masuk ke fase "Penetrasi":
 
-- **Form Injection:** Secara ajaib mendeteksi setiap `<form>`, `<input>`, dan `<textarea>` yang terlihat. CLI akan menyuntikkan _payload_ berbahaya (seperti karakter _Boundary/Max-Integer_, emoji, string yang sangat panjang, XSS simpel `<script>alert</script>`, dan SQL Injection dasar).
+- **Form Injection:** Secara ajaib mendeteksi setiap `<form>`, `<input>`, dan `<textarea>` yang terlihat. CLI akan menyuntikkan ratusan _payload_ berbahaya (seperti karakter _Boundary_, emoji, XSS `<script>alert</script>`, Deep SQLi `' OR 1=1 --`, NoSQLi, hingga _Command Injection_).
 - **Rage Clicks:** Setelah form diisi, bot akan mengekstrak semua tombol (`.btn`, `<button>`) di layar dan mengekliknya secara paksa.
-- **Crash Detection:** Ia memonitor respon DOM (_Document Object Model_). Jika aplikasi _frontend_ Anda (_React/Vue_) hancur dan memunculkan _Uncaught Exception Error_ karena form yang tidak divalidasi, bot akan langsung mengambil _screenshot_ warna-warni sebagai barang bukti (`crash_*.png`).
+- **JWT Token Tampering:** Ia memburu _Cookie Authorization (JWT)_. Jika ditemukan, bot akan melucuti kriptografi keamanannya secara sepihak (CVE-2015-9256) untuk menguji celah **Broken Access Control**.
+- **Crash Detection:** Ia memonitor respon DOM dan HTTP. Jika aplikasi _frontend/backend_ hancur (Uncaught Exception Error / HTTP 500) bot akan langsung menangkap layar dan memasukkannya ke rekap **Critical Bugs**.
 
 ### 4. 👁️ Pixel-Perfect Visual Regression
 
@@ -44,6 +45,14 @@ Selain keamanan, CLI ini juga menjaga stabilitas desain Kosmetik (UI/UX) Anda me
 
 - Uji konsistensi web _responsive_ Anda dengan meniru gawai asli. (Misalnya: `--mobile-emulation="iPhone 13"`).
 - Jika ada bagian [*Dashboard* admin] yang disembunyikan di balik layar Login, CLI dapat "mencuri" _cookies/storageState_ JSON Anda dan melakukan injeksi otomatis (`--auth-json="auth.json"`) sehingga bot bisa berpatroli seolah-olah ia adalah sang Admin.
+
+### 6. ♿ Accessibility (WCAG a11y) Engine
+
+Menginjeksi pustaka standar industri `axe-core` ke dalam otak Playwright untuk memindai seluruh halaman web dari cacat struktural (warna terlalu silau bagi penyandang disabilitas, _Screen Reader/ARIA_ tags yang tidak berfungsi, dsb).
+
+### 7. 🚀 Concurrent Load & Stress Testing
+
+Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Browser) untuk menembakkan ribuan permintaan HTTP secara serentak ke mesin _Server/API_ Anda untuk menghitung skor Ketahanan (Min/Max/Avg Latency) dan stabilitas (RPS) terhadap lonjakan lalu lintas (Seakan-akan terjadi serangan DDoS).
 
 ---
 
@@ -123,6 +132,26 @@ Kapanpun tim _developer_ Anda mencurigai perubahan kode `CSS/Frontend` merusak t
 
 _Hasil perhitungan pergeseran visualnya dicetak ke `visual_regression_report.md` beserta foto kemerah-merahannya di folder hari ini: `proofs/<DD-MM-YYYY>/diff/`_.
 
+### 4. `a11y` - The Accessibility Audit
+
+Perintah ini akan berkeliling web Anda khusus untuk melakukan perhitungan matematis rasio kontras warna dan kelengkapan struktur HTML bagi pembaca layar Tuna Netra (WCAG Standards).
+
+```bash
+./web-qa a11y --target="https://example.com"
+```
+
+_Daftar elemen navigasi/tombol yang cacat dan melanggar standar disabilitas akan didokumentasikan di dalam `accessibility_audit_report.md`._
+
+### 5. `load` - High-Concurrency Stress Test
+
+Menguji kekuatan otot _Server API_ / Infrastruktur web Anda. Pisau bedah paling ampuh untuk mengetahui seberapa banyak _Request Per Second (RPS)_ yang mampu ditahan oleh Server sebelum web Anda melambat atau mati total (Error 500).
+
+```bash
+./web-qa load --target="https://example.com/api" --users=500 --duration=30s
+```
+
+_Sistem akan menghujani target dengan 500 Goroutines (Simulasi pengguna bersamaan) selama 30 detik. Hasil Min/Max/Avg Latency dicetak otomatis ke dalam `load_test_report.md`._
+
 ### 🚩 Kumpulan Flags Global Tersedia:
 
 Anda bisa menyambungkan atribut ini di bagian belakang perintah apapun di atas:
@@ -140,10 +169,12 @@ Anda bisa menyambungkan atribut ini di bagian belakang perintah apapun di atas:
 
 Setiap kali bot selesai mengemban misinya, Anda akan meraup sekumpulan emas Data Audit:
 
-1. **`qa_audit_report.md`** : Buku Suci Laporan Utama. Terbagi atas ringkasan jumlah laman yang ditelusuri (![Crawl Map]), Log Kesalahan Jaringan Rinci (Daftar API yang ambruk dan mati), dan Bug-Bug Kritis. Khusus bug fungsionalitas, akan ada rincian tabel _Steps-To-Reproduce_ (Aksi tombol mana yang membuat aplikasi Anda rusak).
+1. **`qa_audit_report.md`** : Buku Suci Laporan Utama. Terbagi atas ringkasan jumlah laman yang ditelusuri (![Crawl Map]), Log Kesalahan Jaringan Rinci (Daftar API yang ambruk dan mati), dan Bug-Bug Kritis. Khusus bug fungsionalitas, akan ada rincian tabel _Steps-To-Reproduce_ (Aksi tombol mana yang membuat aplikasi Anda rusak, dan peringatan _Broken Access Control / Token Tampering_).
 2. **`network_anomalies.json`** : Basis data mentah berformat JSON bagi Anda yang ingin membuat skrip pipa otomatis (_CI/CD_) untuk sekadar membaca rekap kesalahan HTTP/POST.
 3. **`visual_regression_report.md`** : Laporan kembaran. Ini HANYA dicetak bila perintah `compare` dipanggil. Memamerkan daftar persentase (%) kerusakan layout per halaman lengkap dengan tabel foto rontgen visual-nya.
-4. **Folder `./proofs/<DD-MM-YYYY>/`** : Laci barang-bukti yang **sekarang otomatis dikelompokkan langsung berdasarkan tanggal sesi pelacakan** (Format _DD-MM-YYYY_), sehingga tangkapan layar web harian Anda tidak lagi menumpuk dan tercampur menjadi satu.
+4. **`accessibility_audit_report.md`**: Rekap medis kelayakan fungsi aksesibilitas UI/UX aplikasi Anda untuk penyandang disabilitas. Hadir jika menggunakan fungsi `a11y`.
+5. **`load_test_report.md`**: Sertifikat kekuatan mesin server Anda (RPS & Latency Hit). Hadir jika memanggil perintah `load`.
+6. **Folder `./proofs/<DD-MM-YYYY>/`** : Laci barang-bukti yang **sekarang otomatis dikelompokkan langsung berdasarkan tanggal sesi pelacakan** (Format _DD-MM-YYYY_), sehingga tangkapan layar web harian Anda tidak lagi menumpuk dan tercampur menjadi satu.
    - `proofs/<DD-MM-YYYY>/scan/crash_X.png`: Saksi bisu letak tombol pemicu kepanikan Java Script.
    - `proofs/<DD-MM-YYYY>/scan/view_X.png`: Sketsa muka web di setiap halaman.
    - `proofs/<DD-MM-YYYY>/baseline/` & `.../current/` & `.../diff/`: Repositori log operasi tata-letak (_Visual testing_).

