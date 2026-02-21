@@ -1,22 +1,35 @@
 package config
 
-import "flag"
+import (
+	"log"
 
-type Config struct {
-	TargetURL    string
-	Depth        int
-	OutputReport string
+	"github.com/spf13/viper"
+)
+
+type AppConfig struct {
+	Target          string
+	Depth           int
+	MobileEmulation string
+	AuthJSON        string
+	RecordVideo     bool
+	FastMode        bool
 }
 
-func ParseFlags() *Config {
-	targetURL := flag.String("target-url", "", "The target URL to scan")
-	depth := flag.Int("depth", 1, "The crawling depth")
-	outputReport := flag.String("output-report", "report", "Prefix for the output report files (e.g., 'report' will generate 'report.json' and 'report.md')")
-	flag.Parse()
+// LoadConfig reads the configuration set by Cobra/Viper flags
+func LoadConfig() *AppConfig {
+	err := viper.ReadInConfig()
+	if err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Fatalf("Error reading config file: %v", err)
+		}
+	}
 
-	return &Config{
-		TargetURL:    *targetURL,
-		Depth:        *depth,
-		OutputReport: *outputReport,
+	return &AppConfig{
+		Target:          viper.GetString("target"),
+		Depth:           viper.GetInt("depth"),
+		MobileEmulation: viper.GetString("mobile-emulation"),
+		AuthJSON:        viper.GetString("auth-json"),
+		RecordVideo:     viper.GetBool("record-video"),
+		FastMode:        viper.GetBool("fast-mode"),
 	}
 }
