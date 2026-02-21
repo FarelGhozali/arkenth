@@ -1,0 +1,8 @@
+2026/02/21 19:15:35 Initializing Web QA Automation...
+Usage of web-qa-automation.exe:
+  -depth int
+    	The crawling depth (default 1)
+  -output-report string
+    	Prefix for the output report files (e.g., 'report' will generate 'report.json' and 'report.md') (default "report")
+  -target-url string
+    	The target URL to scan

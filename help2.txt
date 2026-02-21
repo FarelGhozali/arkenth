@@ -1,0 +1,23 @@
+A comprehensive web QA automation tool using Playwright-Go.
+It supports deep network interception, fuzzing, mobile emulation, and proof generation.
+
+Usage:
+  web-qa [command]
+
+Available Commands:
+  baseline    Take a pristine snapshot of the target URLs to act as visual baselines
+  compare     Run a visual crawl and compare current screenshots pixel-by-perfectly with /baseline
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  scan        Start the automated QA scanning and fuzzing sequence
+
+Flags:
+      --auth-json string          Path to a Playwright storageState JSON for authenticated sessions
+  -d, --depth int                 Crawling depth (default is 1) (default 1)
+      --fast-mode                 Block heavy media and tracking scripts to speed up scans
+  -h, --help                      help for web-qa
+      --mobile-emulation string   Emulate a mobile device (e.g., 'iPhone 13')
+      --record-video              Record test session videos to /proofs
+  -t, --target string             Target URL to scan (required)
+
+Use "web-qa [command] --help" for more information about a command.

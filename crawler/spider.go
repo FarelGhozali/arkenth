@@ -16,10 +16,12 @@ import (
 )
 
 type Spider struct {
-	Config  *config.AppConfig
-	Report  *models.Report
-	Visited map[string]bool
-	Fuzzer  *Fuzzer
+	Config      *config.AppConfig
+	Report      *models.Report
+	Visited     map[string]bool
+	Fuzzer      *Fuzzer
+	ProofDir    string // Control where images go (default 'proofs', visual: 'proofs/baseline' or 'proofs/current')
+	SkipFuzzing bool   // Control if active fuzzing happens (visual baseline only wants layouts)
 }
 
 func NewSpider(cfg *config.AppConfig) *Spider {
@@ -29,19 +31,20 @@ func NewSpider(cfg *config.AppConfig) *Spider {
 	}
 	rep := models.NewReport(cfg.Target, mobile)
 	return &Spider{
-		Config:  cfg,
-		Report:  rep,
-		Visited: make(map[string]bool),
-		Fuzzer:  NewFuzzer(rep),
+		Config:      cfg,
+		Report:      rep,
+		Visited:     make(map[string]bool),
+		Fuzzer:      NewFuzzer(rep),
+		ProofDir:    "./proofs", // default
+		SkipFuzzing: false,      // default
 	}
 }
 
 // Run boots Playwright, handles context setup (Auth/Mobile), triggers crawl, and kicks off Reporter
 func (s *Spider) Run() error {
-	proofDir := "./proofs"
-	f, _ := os.Stat(proofDir)
+	f, _ := os.Stat(s.ProofDir)
 	if f == nil {
-		os.Mkdir(proofDir, 0755)
+		os.MkdirAll(s.ProofDir, 0755)
 	}
 
 	err := playwright.Install()
@@ -70,12 +73,12 @@ func (s *Spider) Run() error {
 
 	if s.Config.RecordVideo {
 		ctxOptions.RecordVideo = &playwright.RecordVideo{
-			Dir: proofDir,
+			Dir: s.ProofDir,
 		}
 	}
 
 	if s.Config.AuthJSON != "" {
-		ctxOptions.StorageState = playwright.String(s.Config.AuthJSON)
+		ctxOptions.StorageStatePath = playwright.String(s.Config.AuthJSON)
 		log.Printf("Loaded Authentication State from %s", s.Config.AuthJSON)
 	}
 
@@ -93,18 +96,16 @@ func (s *Spider) Run() error {
 	}
 
 	// Begin Recursive Crawl Core
-	s.crawl(s.Config.Target, 0, browser, ctxOptions, proofDir)
+	s.crawl(s.Config.Target, 0, browser, ctxOptions, s.ProofDir)
 
 	// Clean up videos if flag wasn't sent, or process outputs
 	if !s.Config.RecordVideo {
-		// Video directories get created inherently sometimes if not explicitly handled per page.
-		os.RemoveAll("./proofs")
-		os.Mkdir("./proofs", 0755) // Recreate fresh for purely screenshots
+		// Just ensure director is ok, won't aggressively delete anymore, just rely on new images replacing
 	}
 
 	log.Println("Crawl Complete. Generating Reports...")
 
-	rep := reporter.NewReporter(s.Report, proofDir)
+	rep := reporter.NewReporter(s.Report, s.ProofDir)
 	if err := rep.GenerateOutputs(); err != nil {
 		log.Printf("Error generating reports: %v", err)
 	} else {
@@ -173,7 +174,11 @@ func (s *Spider) crawl(targetURL string, currentDepth int, browser playwright.Br
 	})
 
 	// 4. Advanced Fuzzing Phase
-	s.Fuzzer.FuzzAll(page, cleanURL)
+	if !s.SkipFuzzing {
+		s.Fuzzer.FuzzAll(page, cleanURL)
+	} else {
+		log.Printf("📸 Visual mode: Snapping [%s] cleanly without DOM fuzzing.", cleanURL)
+	}
 
 	// 5. Gather subsequent internal links for next Depth Layer
 	if currentDepth < s.Config.Depth {
