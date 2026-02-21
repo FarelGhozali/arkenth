@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"web-qa-automation/config"
 	"web-qa-automation/interceptor"
@@ -156,15 +157,18 @@ func (s *Spider) crawl(targetURL string, currentDepth int, browser playwright.Br
 		s.Fuzzer.CaptureCrash(page, err, proofDir)
 	})
 
-	// 2. Navigation
+	// 2. Navigation - Use Networkidle for SPAs (React/Next.js) to finish fetching APIs and hiding loading screens
 	_, err = page.Goto(cleanURL, playwright.PageGotoOptions{
-		WaitUntil: playwright.WaitUntilStateDomcontentloaded,
+		WaitUntil: playwright.WaitUntilStateNetworkidle,
 	})
 
 	if err != nil {
 		log.Printf("Navigation failed on %s: %v", cleanURL, err)
 		return
 	}
+
+	// Hard pause to allow CSS animations / Modals to settle
+	time.Sleep(2 * time.Second)
 
 	// 3. Take Proof Screenshot of the unique URL view
 	filename := fmt.Sprintf("view_%s.png", sanitizeFilename(cleanURL))

@@ -107,7 +107,7 @@ func (f *Fuzzer) CaptureCrash(page playwright.Page, err error, proofDir string) 
 }
 
 func sanitizeFilename(url string) string {
-	replacer := strings.NewReplacer("https://", "", "http://", "", "/", "_", "?", "_", "&", "_", "=", "_")
+	replacer := strings.NewReplacer("https://", "", "http://", "", "/", "_", "?", "_", "&", "_", "=", "_", ":", "_")
 	name := replacer.Replace(url)
 	if len(name) > 50 { // Truncate to avoid OS file length limits
 		name = name[:50]
