@@ -30,7 +30,7 @@ CLI ini tidak hanya sekadar melihat halaman web. Pada mode `scan` normal, ia aka
 
 - **Form Injection:** Secara ajaib mendeteksi setiap `<form>`, `<input>`, dan `<textarea>` yang terlihat. CLI akan menyuntikkan ratusan _payload_ berbahaya (seperti karakter _Boundary_, emoji, XSS `<script>alert</script>`, Deep SQLi `' OR 1=1 --`, NoSQLi, hingga _Command Injection_).
 - **Rage Clicks:** Setelah form diisi, bot akan mengekstrak semua tombol (`.btn`, `<button>`) di layar dan mengekliknya secara paksa.
-- **JWT Token Tampering:** Ia memburu _Cookie Authorization (JWT)_. Jika ditemukan, bot akan melucuti kriptografi keamanannya secara sepihak (CVE-2015-9256) untuk menguji celah **Broken Access Control**.
+- **JWT Token Tampering:** _(Membutuhkan flag `--auth-json`)_. Ia memburu _Cookie Authorization (JWT)_ dari sesi login Anda. Jika ditemukan, bot akan melucuti kriptografi keamanannya secara sepihak (CVE-2015-9256) untuk menguji celah **Broken Access Control**.
 - **Crash Detection:** Ia memonitor respon DOM dan HTTP. Jika aplikasi _frontend/backend_ hancur (Uncaught Exception Error / HTTP 500) bot akan langsung menangkap layar dan memasukkannya ke rekap **Critical Bugs**.
 
 ### 4. 👁️ Pixel-Perfect Visual Regression
