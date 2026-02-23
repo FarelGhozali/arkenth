@@ -11,6 +11,8 @@ import (
 var (
 	users    int
 	duration string
+	method   string
+	bodyJson string
 )
 
 var loadCmd = &cobra.Command{
@@ -24,7 +26,7 @@ var loadCmd = &cobra.Command{
 			log.Fatalf("Invalid duration format. Use formats like '10s', '1m'. Error: %v", err)
 		}
 
-		res := loadtester.RunLoadTest(AppConfig.Target, users, parsedDuration)
+		res := loadtester.RunLoadTest(AppConfig.Target, users, parsedDuration, method, bodyJson)
 
 		log.Println("Load Test Completed. Generating report...")
 		err = loadtester.GenerateLoadReport("load_test_report.md", AppConfig.Target, users, res)
@@ -39,5 +41,7 @@ var loadCmd = &cobra.Command{
 func init() {
 	loadCmd.Flags().IntVar(&users, "users", 50, "Number of concurrent virtual users")
 	loadCmd.Flags().StringVar(&duration, "duration", "10s", "Duration of the load test (e.g. 10s, 1m)")
+	loadCmd.Flags().StringVar(&method, "method", "GET", "HTTP Method to use (GET, POST, PUT, DELETE)")
+	loadCmd.Flags().StringVar(&bodyJson, "body-json", "", "JSON string to send as request body. Use {{RANDOM}} for cache-busting mutations.")
 	rootCmd.AddCommand(loadCmd)
 }

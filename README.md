@@ -8,13 +8,14 @@ Alat ini dirancang khusus untuk para _Quality Assurance Engineer_, _Bug Bounty H
 
 ## 🌟 Fitur Utama (Core Features)
 
-### 1. 🌐 Deep Network Interception (Sistem Sadap Jaringan)
+### 1. 🌐 Deep Network Interception & Fingerprinting
 
 Alat ini menyusup ke level terendah dari _browser_ (_headless_) dan menyadap seluruh lalu-lintas jaringan (_Network Traffic_):
 
 - Merekam setiap API _Call_ atau pemuatan aset yang mendapatkan respon **HTTP 4xx (Client Error)** dan **5xx (Server Error)**.
+- **Server/WAF Fingerprinting:** Saat mesin target ambruk (Error), bot membaca _HTTP Response Header_ secara mendalam untuk melacak teknologi pertahanan yang mereka gunakan (Contoh: menemukan pelacak `Cloudflare`, `AWS CloudFront`, atau mendeteksi _framework_ `Express` / `Spring Boot`).
 - Mencatat **Payload POST** yang memicu _error_ tersebut, sehingga memudahkan _developer_ untuk melakukan _debug_.
-- Menyimpannya dalam bentuk raw `network_anomalies.json` secara mendetail (memuat Method, Endpoint, Status HTTP, dan Pesan _Error_).
+- Menyimpannya dalam bentuk raw `network_anomalies.json` secara mendetail (memuat Intelijen Target, Method, Endpoint, Status HTTP, dan Pesan _Error_).
 
 ### 2. ⚡ Fast-Mode (Optimasi Kecepatan)
 
@@ -24,10 +25,11 @@ Dilengkapi dengan `page.Route()` interception, jika Anda menggunakan bendera `--
 - Pemblokiran _Media_ kelas berat (.jpg, .png. .mp4, tipe _font_).
 - Meningkatkan kecepatan _scanning_ hingga 3x lipat pada mode non-visual.
 
-### 3. 💥 Advanced Security & Token Fuzzing
+### 3. 💥 Advanced Security & Smart API Discovery
 
 CLI ini tidak hanya sekadar melihat halaman web. Pada mode `scan` normal, ia akan masuk ke fase "Penetrasi":
 
+- **Smart API Discovery:** Bot akan secara diam-diam mengunduh semua file `.js` _Frontend_ di website target Anda. Menggunakan Regex, ia akan mengekstrak direktori rute **Hidden API/Internal** (seperti `/api/v1/users`) yang tidak pernah dipublikasikan, lalu menyusup ke dalamnya.
 - **Form Injection:** Secara ajaib mendeteksi setiap `<form>`, `<input>`, dan `<textarea>` yang terlihat. CLI akan menyuntikkan ratusan _payload_ berbahaya (seperti karakter _Boundary_, emoji, XSS `<script>alert</script>`, Deep SQLi `' OR 1=1 --`, NoSQLi, hingga _Command Injection_).
 - **Rage Clicks:** Setelah form diisi, bot akan mengekstrak semua tombol (`.btn`, `<button>`) di layar dan mengekliknya secara paksa.
 - **JWT Token Tampering:** _(Membutuhkan flag `--auth-json`)_. Ia memburu _Cookie Authorization (JWT)_ dari sesi login Anda. Jika ditemukan, bot akan melucuti kriptografi keamanannya secara sepihak (CVE-2015-9256) untuk menguji celah **Broken Access Control**.
@@ -46,13 +48,15 @@ Selain keamanan, CLI ini juga menjaga stabilitas desain Kosmetik (UI/UX) Anda me
 - Uji konsistensi web _responsive_ Anda dengan meniru gawai asli. (Misalnya: `--mobile-emulation="iPhone 13"`).
 - Jika ada bagian [*Dashboard* admin] yang disembunyikan di balik layar Login, CLI dapat "mencuri" _cookies/storageState_ JSON Anda dan melakukan injeksi otomatis (`--auth-json="auth.json"`) sehingga bot bisa berpatroli seolah-olah ia adalah sang Admin.
 
-### 6. ♿ Accessibility (WCAG a11y) Engine
+### 6. ♿ Accessibility (WCAG a11y) Engine with Dynamic UI
 
 Menginjeksi pustaka standar industri `axe-core` ke dalam otak Playwright untuk memindai seluruh halaman web dari cacat struktural (warna terlalu silau bagi penyandang disabilitas, _Screen Reader/ARIA_ tags yang tidak berfungsi, dsb).
+**Peningkatan Level Lanjut:** Bot ini secara mandiri akan membuka seluruh _Dropdown Menu, Pop-up Modal, dan Dialog/Accordion_ yang disembunyikan CSS _sebelum_ memindai halamannya, sehingga cacat _UI tersembunyi_ tidak bisa lolos dari pemindaian.
 
-### 7. 🚀 Concurrent Load & Stress Testing
+### 7. 🚀 Concurrent & Stateful Load Testing
 
-Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Browser) untuk menembakkan ribuan permintaan HTTP secara serentak ke mesin _Server/API_ Anda untuk menghitung skor Ketahanan (Min/Max/Avg Latency) dan stabilitas (RPS) terhadap lonjakan lalu lintas (Seakan-akan terjadi serangan DDoS).
+Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Browser) untuk menembakkan ribuan permintaan HTTP secara serentak ke mesin _Server/API_.
+**Dukungan Stateful POST/Bypass Cache:** Bot load-tester ini mampu menembakkan lalu lintas HTTP `POST/PUT` seraya merubah-rubah _Payload JSON_ secara dinamis di setiap tembakan. Contoh: `{"email": "user_{{RANDOM}}@test.com"}` guna memaksa lalu lintas menembus blokade _Cache CDN Cloudflare_ dan langsung meledakkan _Database Server_ Anda sesungguhnya.
 
 ---
 
@@ -142,15 +146,19 @@ Perintah ini akan berkeliling web Anda khusus untuk melakukan perhitungan matema
 
 _Daftar elemen navigasi/tombol yang cacat dan melanggar standar disabilitas akan didokumentasikan di dalam `accessibility_audit_report.md`._
 
-### 5. `load` - High-Concurrency Stress Test
+### 5. `load` - Stateful High-Concurrency Stress Test
 
-Menguji kekuatan otot _Server API_ / Infrastruktur web Anda. Pisau bedah paling ampuh untuk mengetahui seberapa banyak _Request Per Second (RPS)_ yang mampu ditahan oleh Server sebelum web Anda melambat atau mati total (Error 500).
+Menguji kekuatan otot _Server API_ / Infrastruktur web Anda. Pisau bedah paling ampuh untuk mengetahui seberapa banyak _Request Per Second (RPS)_ yang mampu ditahan oleh Server sebelum web Anda melambat atau mati total (Error 500). Mendukung injeksi tag `{{RANDOM}}` untuk Payload tipe POST.
 
 ```bash
+# Contoh 1: Pengetesan biasa (GET)
 ./web-qa load --target="https://example.com/api" --users=500 --duration=30s
+
+# Contoh 2: Serangan Database murni dengan injeksi Dynamic JSON Cache-Busting (POST)
+./web-qa load --target="https://example.com/api/register" --method="POST" --body-json='{"email": "hacked_{{RANDOM}}@mail.com"}' --users=200 --duration=15s
 ```
 
-_Sistem akan menghujani target dengan 500 Goroutines (Simulasi pengguna bersamaan) selama 30 detik. Hasil Min/Max/Avg Latency dicetak otomatis ke dalam `load_test_report.md`._
+_Sistem akan menghujani target dengan ratusan Goroutines (Simulasi pengguna bersamaan). Tag `{{RANDOM}}` akan mencetak string acak per koneksi sehingga Cloudflare Cache tidak bisa menolong server target Anda. Hasil dicetak ke dalam `load_test_report.md`._
 
 ### 🚩 Kumpulan Flags Global Tersedia:
 

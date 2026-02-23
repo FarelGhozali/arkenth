@@ -1,6 +1,7 @@
 package interceptor
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -59,11 +60,40 @@ func (i *Interceptor) AttachToPage(page playwright.Page) {
 			req := response.Request()
 			payloadData, _ := req.PostData()
 
+			// [Phase 2: Advanced] Server & WAF Fingerprinting
+			headers := response.Headers()
+			var fingerprint strings.Builder
+
+			// Detect WAF
+			if _, ok := headers["cf-ray"]; ok {
+				fingerprint.WriteString("[WAF: Cloudflare] ")
+			} else if _, ok := headers["x-amz-cf-id"]; ok {
+				fingerprint.WriteString("[WAF: AWS CloudFront] ")
+			} else if _, ok := headers["x-sucuri-id"]; ok {
+				fingerprint.WriteString("[WAF: Sucuri] ")
+			}
+
+			// Detect Backend/Server
+			if server, ok := headers["server"]; ok {
+				fingerprint.WriteString(fmt.Sprintf("[Server: %s] ", server))
+			}
+			if poweredBy, ok := headers["x-powered-by"]; ok {
+				fingerprint.WriteString(fmt.Sprintf("[Framework: %s] ", poweredBy))
+			}
+
+			fpString := strings.TrimSpace(fingerprint.String())
+
+			errorDesc := response.StatusText()
+			if fpString != "" {
+				errorDesc = fmt.Sprintf("%s | Intel: %s", errorDesc, fpString)
+				log.Printf("🕵️  Fingerprint found on %s: %s", req.URL(), fpString)
+			}
+
 			anomaly := models.NetworkAnomaly{
 				URL:      req.URL(),
 				Method:   req.Method(),
 				Status:   status,
-				ErrorMsg: response.StatusText(),
+				ErrorMsg: errorDesc,
 				Payload:  payloadData,
 			}
 			i.Anomalies = append(i.Anomalies, anomaly)

@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"web-qa-automation/a11y"
@@ -206,6 +208,14 @@ func (s *Spider) crawl(targetURL string, currentDepth int, browser playwright.Br
 		cleanPage.Goto(cleanURL, playwright.PageGotoOptions{WaitUntil: playwright.WaitUntilStateDomcontentloaded})
 
 		links, _ := extractInternalLinks(cleanPage, cleanURL)
+		
+		// [Phase 2: Advanced Feature] - Smart JS Hunt
+		hiddenAPIs, _ := scrapeJSForHiddenEndpoints(cleanPage, cleanURL)
+		if len(hiddenAPIs) > 0 {
+			log.Printf("🕵️  Smart Spider: Discovered %d hidden endpoints from Javascript on %s", len(hiddenAPIs), cleanURL)
+		}
+		
+		links = append(links, hiddenAPIs...)
 		cleanPage.Close()
 
 		for _, link := range links {
@@ -254,4 +264,74 @@ func extractInternalLinks(page playwright.Page, baseURL string) ([]string, error
 	}
 
 	return internalLinks, nil
+}
+
+// scrapeJSForHiddenEndpoints downloads JS files and uses Regex to find hardcoded API routes
+func scrapeJSForHiddenEndpoints(page playwright.Page, baseURL string) ([]string, error) {
+	var hiddenEndpoints []string
+
+	// Find all <script src="..."></script>
+	scripts, err := page.Locator("script[src]").EvaluateAll(`elements => elements.map(e => e.src)`)
+	if err != nil {
+		return nil, err
+	}
+
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Broad regex to catch common API patterns encoded in javascript strings
+	// Looks for strings starting with /api/, /v1/, /v2/, /internal/
+	apiRegex := regexp.MustCompile(`"(/(?:api|v[1-9]|internal)/[^"\s]+)"|'((?:/api|v[1-9]|internal)/[^'\s]+)'`)
+
+	if scriptURLs, ok := scripts.([]interface{}); ok {
+		for _, s := range scriptURLs {
+			if strUrl, ok := s.(string); ok {
+				// Only fetch JS files from our target domain to avoid crawling 3rd party CDNs
+				parsed, err := url.Parse(strUrl)
+				if err != nil || parsed.Host != base.Host {
+					continue
+				}
+
+				absURL := base.ResolveReference(parsed).String()
+				
+				// Fetch the raw JS content using Playwright's evaluation to bypass CORS
+				jsContent, err := page.Evaluate(fmt.Sprintf(`async () => {
+					try {
+						let res = await fetch("%s");
+						return await res.text();
+					} catch (e) { return ""; }
+				}`, absURL))
+
+				if err != nil {
+					continue
+				}
+
+				if contentStr, ok := jsContent.(string); ok && contentStr != "" {
+					matches := apiRegex.FindAllStringSubmatch(contentStr, -1)
+					for _, match := range matches {
+						// match[1] corresponds to double quotes, match[2] to single quotes
+						endpoint := match[1]
+						if endpoint == "" {
+							endpoint = match[2]
+						}
+						
+						if endpoint != "" {
+							// Check if it's already a full URL or just a path
+							if !strings.HasPrefix(endpoint, "http") {
+								endpointURL, err := url.Parse(endpoint)
+								if err == nil {
+									endpoint = base.ResolveReference(endpointURL).String()
+								}
+							}
+							hiddenEndpoints = append(hiddenEndpoints, endpoint)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return hiddenEndpoints, nil
 }

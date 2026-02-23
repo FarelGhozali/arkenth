@@ -1,9 +1,12 @@
 package loadtester
 
 import (
+	"bytes"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,7 +22,7 @@ type LoadResult struct {
 	AvgLatency    time.Duration
 }
 
-func RunLoadTest(targetURL string, users int, duration time.Duration) LoadResult {
+func RunLoadTest(targetURL string, users int, duration time.Duration, method string, bodyJson string) LoadResult {
 	var wg sync.WaitGroup
 	var totalReq, successReq, errReq int64
 
@@ -35,6 +38,9 @@ func RunLoadTest(targetURL string, users int, duration time.Duration) LoadResult
 
 	start := time.Now()
 
+	// Seed PRNG for mutations
+	rand.Seed(time.Now().UnixNano())
+
 	for i := 0; i < users; i++ {
 		wg.Add(1)
 		go func() {
@@ -45,8 +51,32 @@ func RunLoadTest(targetURL string, users int, duration time.Duration) LoadResult
 				case <-stopCh:
 					return
 				default:
+					// Dynamic Mutation [Phase 2: Advanced Feature]
+					currentBody := bodyJson
+					if currentBody != "" && strings.Contains(currentBody, "{{RANDOM}}") {
+						randomVal := fmt.Sprintf("%d", rand.Intn(9999999))
+						currentBody = strings.ReplaceAll(currentBody, "{{RANDOM}}", randomVal)
+					}
+
+					var req *http.Request
+					var err error
+
+					if currentBody != "" {
+						req, err = http.NewRequest(method, targetURL, bytes.NewBuffer([]byte(currentBody)))
+						if req != nil {
+							req.Header.Set("Content-Type", "application/json")
+						}
+					} else {
+						req, err = http.NewRequest(method, targetURL, nil)
+					}
+
+					if err != nil {
+						atomic.AddInt64(&errReq, 1)
+						continue
+					}
+
 					reqStart := time.Now()
-					resp, err := client.Get(targetURL)
+					resp, err := client.Do(req)
 					latency := time.Since(reqStart)
 
 					atomic.AddInt64(&totalReq, 1)

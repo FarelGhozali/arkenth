@@ -3,6 +3,7 @@ package a11y
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/playwright-community/playwright-go"
@@ -48,6 +49,27 @@ func RunAccessibilityScan(page playwright.Page) ([]AxeViolation, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to inject axe-core: %v", err)
+	}
+
+	// [Phase 2: Advanced] Dynamic State Mutation
+	// Force-open hidden elements so the scanner can audit their contents
+	_, err = page.Evaluate(`() => {
+		// 1. Open all native <details> accordions
+		document.querySelectorAll('details').forEach(d => d.setAttribute('open', 'true'));
+		
+		// 2. Attempt to trigger aria-expanded on common dropdown buttons
+		document.querySelectorAll('[aria-expanded="false"]').forEach(el => {
+			try { el.setAttribute('aria-expanded', 'true'); } catch(e) {}
+		});
+		
+		// 3. Remove CSS display:none from common modal/dropdown classes (brute force visibility)
+		const hiddenElements = document.querySelectorAll('.dropdown-menu, .modal, .offcanvas, [role="menu"]');
+		hiddenElements.forEach(el => {
+			try { el.style.display = 'block'; el.style.visibility = 'visible'; el.style.opacity = '1'; } catch(e) {}
+		});
+	}`)
+	if err != nil {
+		log.Printf("Warning: Failed to inject dynamic UI expander: %v", err)
 	}
 
 	// 2. Run the audit
