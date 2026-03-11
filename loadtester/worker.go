@@ -41,11 +41,26 @@ func RunLoadTest(targetURL string, users int, duration time.Duration, method str
 	// Seed PRNG for mutations
 	rand.Seed(time.Now().UnixNano())
 
+	// Hardware-Bound Performance Tuning: Custom HTTP Transport
+	// Membuang batasan 'sopan' dari Go, mengizinkan koneksi tak terbatas untuk di-reuse
+	customTransport := &http.Transport{
+		MaxIdleConns:        0,         // 0 = Tanpa Batas global
+		MaxIdleConnsPerHost: users * 2, // Sediakan minimal koneksi idle sebanyak user + buffer
+		MaxConnsPerHost:     0,         // 0 = Tanpa Batas koneksi ke target
+		IdleConnTimeout:     30 * time.Second,
+		DisableKeepAlives:   false, // Wajib false agar koneksi TCP di-reuse (meminimalisir delay handshaking)
+	}
+
+	// Gunakan 1 HTTP Client global yang kuat untuk dipakai berbarengan oleh ribuan Goroutine
+	client := &http.Client{
+		Transport: customTransport,
+		Timeout:   10 * time.Second, // Timeout request wajar per user
+	}
+
 	for i := 0; i < users; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			client := &http.Client{Timeout: 10 * time.Second}
 			for {
 				select {
 				case <-stopCh:
