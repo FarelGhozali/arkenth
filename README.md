@@ -96,6 +96,38 @@ Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Bro
 
 ---
 
+## 🐳 Menjalankan dengan Docker
+
+### Build image
+
+```bash
+docker build -t web-qa-automation:latest .
+```
+
+### Jalankan command CLI dari container
+
+```bash
+docker run --rm -it \
+  -v "$(pwd)/proofs:/app/proofs" \
+  web-qa-automation:latest scan --target="https://example.com" --depth=1
+```
+
+> Gunakan volume mount jika Anda ingin menyimpan output report/screenshot ke host lokal.
+
+---
+
+## 🚀 CI/CD Docker (GitHub Actions)
+
+Workflow Docker ada di `.github/workflows/docker.yml` dengan perilaku:
+
+- **Pull Request**: build image Docker untuk validasi (tanpa push).
+- **Push ke `main` atau tag `v*`**: build dan push image ke **GHCR**.
+- Image dipublikasikan ke:
+  - `ghcr.io/<owner>/<repo>:latest` (default branch)
+  - `ghcr.io/<owner>/<repo>:<branch|tag|sha>`
+
+---
+
 ## 📖 Buku Panduan Penggunaan (Commands & Flags)
 
 Aplikasi ini menggunakan teknologi Command-Line dari `spf13/cobra`. File binari (_executable_) yang telah di-_build_ menyajikan tiga perintah sakti:
