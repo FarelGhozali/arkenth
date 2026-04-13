@@ -58,18 +58,17 @@ Menginjeksi pustaka standar industri `axe-core` ke dalam otak Playwright untuk m
 Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Browser) untuk menembakkan ribuan permintaan HTTP secara serentak ke mesin _Server/API_.
 **Dukungan Stateful POST/Bypass Cache:** Bot load-tester ini mampu menembakkan lalu lintas HTTP `POST/PUT` seraya merubah-rubah _Payload JSON_ secara dinamis di setiap tembakan. Contoh: `{"email": "user_{{RANDOM}}@test.com"}` guna memaksa lalu lintas menembus blokade _Cache CDN Cloudflare_ dan langsung meledakkan _Database Server_ Anda sesungguhnya.
 
-### 8. 🖥️ Web UI Dashboard (Embedded SPA)
+### 8. 🖥️ Web UI Dashboard (Antarmuka Web Internal)
 
-Tidak ingin repot mengetik perintah CLI? Seluruh fitur di atas kini dapat diakses melalui **Web Dashboard** bergaya modern yang tersemat langsung di dalam _executable binary_ Go!
+Sebagai sebuah *tool QA Automation*, kami memahami bahwa pengujian dan pemantauan seringkali lebih efisien bila dieksekusi melalui antarmuka grafis (GUI). Oleh karena itu, *executable binary* hasil kompilasi *tool* ini telah dilengkapi dengan **Web Dashboard** modern bawaan.
 
-- **Teknologi:** Frontend dibangun menggunakan **Svelte + Vite** dengan _styling_ **Tailwind CSS + DaisyUI** (Tema gelap _"Night"_).
-- **Arsitektur _Single Binary_:** Saat proses `go build`, seluruh aset frontend (HTML/CSS/JS) di-_embed_ ke dalam _binary_ Go menggunakan `go:embed`. Hasilnya? Satu file aplikasi utuh yang sudah mencakup UI + Mesin QA sekaligus, tanpa ketergantungan eksternal (Node.js, npm, dsb).
-- **REST API Builtin:** Backend Go menyediakan endpoint `/api/run` yang menerima _payload_ JSON dari UI dan menjalankan mesin _scanner/fuzzer/load-tester_ secara asinkron di _background_ menggunakan _goroutines_.
-- **Fitur UI:**
-  - Formulir lengkap: Target URL, Depth Slider, Mobile Emulation, Auth JSON, toggle Fast Mode & Record Video.
-  - Halaman khusus untuk setiap perintah: Scan, Baseline, Compare, A11y, dan Load Test.
-  - Panel status dan log _real-time_ untuk memantau kemajuan bot.
-  - Sidebar navigasi yang dapat diciutkan (_collapsible_).
+Fitur ini memungkinkan Anda (maupun tim QA non-teknis internal Anda) untuk mengoperasikan seluruh instruksi canggih (Scan, Regresi Visual, Audit, dsb) secara interaktif melalui *browser*, tanpa perlu menghafal _flag_ panjang di CLI.
+
+**Kelebihan Menggunakan Web Dashboard:**
+- **Satu Aplikasi Utuh (Single Executive):** Anda TIDAK PERLU menginstal Node.js, Web Server Apache, Nginx, atau dependensi web rumit lainnya. Kami membungkus seluruh wujud *website frontend* (Svelte + Tailwind) langsung ke dalam satu buah file *executable* milik Golang kita. 
+- **User-Friendly:** Tinggal isi "URL Target", geser *slider* ke dalaman scan, hidup-matikan opsi video melalui tombol, lalu klik "Mulai". Sangat praktis.
+- **Log Visual Terpadu:** Alih-alih membaca teks hitam-putih bergerak cepat di Terminal, Dashboard menyajikan laporan status *real-time* yang enak dipandang (mendukung Tema Gelap/Night Mode).
+- **Asinkron & Background Task:** Setelah Anda menekan tombol "Mulai Scan" di web, Anda bisa meninggalkan halaman itu. CLI akan mengeksekusi operasi berat tersebut di *background*.
 
 ---
 
@@ -112,9 +111,9 @@ Tidak ingin repot mengetik perintah CLI? Seluruh fitur di atas kini dapat diakse
 
 5. **Kompilasi CLI Build (Ubah jadi File '.exe')**:
 
-   Proses ini akan otomatis menyertakan (_embed_) aset Web UI yang sudah di-_build_ pada langkah sebelumnya ke dalam file _binary_.
+   Proses ini akan otomatis menyertakan (_embed_) aset Web UI yang sudah di-_build_ pada langkah sebelumnya ke dalam file _binary_. Anda bebas menamai hasil output file eksekusinya (misalnya `qa-bot`):
    ```bash
-   go build -o web-qa
+   go build -o qa-bot
    ```
 
 ---
@@ -155,25 +154,52 @@ Workflow Docker ada di `.github/workflows/docker.yml` dengan perilaku:
 
 Aplikasi ini menggunakan teknologi Command-Line dari `spf13/cobra`. File binari (_executable_) yang telah di-_build_ menyajikan dua mode operasi: **Web Dashboard** (UI) dan **CLI** (Command Line).
 
-### 0. `ui` - 🖥️ Web Dashboard (Tanpa Perlu Mengetik Command!)
+### 0. `ui` - 🖥️ Membuka Web Dashboard (Rekomendasi Utama Operasional)
 
-Ini adalah cara termudah untuk menggunakan seluruh fitur aplikasi ini. Cukup jalankan satu perintah, dan seluruh _Dashboard_ akan terbuka di _browser_ Anda:
-
-```bash
-./web-qa ui
-```
-
-Dashboard akan berjalan di `http://localhost:8080`. Anda dapat mengubah port dengan flag `--port`:
+Setelah Anda (atau DevOps Anda) berhasil melakukan kompilasi (_build_) aplikasi ini menjadi file *executable*, cara paling efisien untuk mengoperasikan seluruh fitur alat ini adalah melalui server UI terintegrasinya. Cukup jalankan perintah berikut (ganti `<nama-binary-anda>` dengan nama hasil _build_ Anda):
 
 ```bash
-./web-qa ui --port 3000
+./<nama-binary-anda> ui
 ```
 
-Dari antarmuka web ini, Anda bisa langsung mengisi Target URL, mengatur semua opsi (Depth, Fast Mode, Mobile Emulation, dsb), dan menekan tombol untuk menjalankan _Scan_, _Baseline_, _Compare_, _A11y_, atau _Load Test_ — semuanya tanpa mengetik perintah CLI sama sekali.
+*Atau, Anda juga bisa menjalankannya langsung dari _source code_ tanpa perlu melakukan _build_ sama sekali:*
+```bash
+go run main.go ui
+```
 
-> **Catatan:** Semua perintah CLI di bawah ini tetap tersedia dan berfungsi penuh bagi Anda yang lebih suka menggunakan terminal.
+**Langkah-langkah Penggunaan Lengkap via Web:**
 
-Berikut adalah perintah-perintah CLI yang tersedia:
+1. Buka aplikasi Terminal / Command Prompt Anda.
+2. Ketikkan perintah di atas, lalu tekan `Enter`.
+3. Akan muncul pengumuman bahwa server siap:
+   ```text
+   ╔══════════════════════════════════════════════╗
+   ║     🕵️  Web QA Automation Dashboard          ║
+   ╠══════════════════════════════════════════════╣
+   ║  🌐 Open: http://localhost:8080              ║
+   ║  ⏹  Stop: Press Ctrl+C                      ║
+   ╚══════════════════════════════════════════════╝
+   ```
+4. Buka Browser Anda (Chrome / Firefox / Safari).
+5. Ketik secara manual alamat ini di *address bar* Anda: **`http://localhost:8080`**
+6. Selamat! Panel Web QA Automation yang mewah dengan *Dark Theme* kini ada di depan Anda.
+7. Di sebelah kiri (Sidebar), Anda bisa mengklik ganti-ganti fitur: 
+   - **Scan**: Untuk Mode Audit Keamanan Web / Fuzzing.
+   - **Baseline & Compare**: Untuk men-*testing* regresi desain Visual (perubahan jarak tombol, beda warna akibat _update_ web).
+   - **A11y**: Mengecek Skor Aksesibilitas WCAG standard Disabilitas.
+   - **Load Test**: Untuk menguji beban tembakan ribuan klik per detik.
+8. Tinggal isi kolom **Target URL** (cth: `https://shopee.co.id`), atur opsi lewat kursor mouse Anda, lalu klik **Mulai**.
+9. **Cara Mematikan:** Jika sudah puas menggunakannya, kembali ke Terminal hitam Anda tadi, lalu tekan gabungan tombol `CTRL + C` di *keyboard* untuk mematikan server.
+
+*(Catatan Lanjut: Jika kebetulan Port 8080 di laptop Anda error atau dipakai aplikasi lain, Anda bebas memindahkannya dengan: `go run main.go ui --port 9090`)*
+
+---
+
+### Mode CLI Terdedikasi (Untuk Integrasi Skrip & CI/CD)
+
+> **Catatan:** Apabila Anda sekadar ingin menjalankan *testing* manual, silakan gunakan mode Web Dashboard `ui` di atas. Panduan _flag_ CLI di bawah ini didedikasikan bagi Anda yang berniat mengintegrasikan _binary_ ini ke dalam lingkungan otomatis (seperti Gitlab-CI, GitHub Actions, atau *Cronjob* Server).
+
+Berikut adalah perintah-perintah CLI yang masih beroperasi murni secara *headless* tanpa memicu UI Server:
 
 ### 1. `scan` - The Functional Security Audit
 
@@ -182,13 +208,13 @@ Ini adalah mode palu godam. Bot akan merayap ke dalam, merekam anomali jaringan,
 **Contoh Cepat (Fast Mode):**
 
 ```bash
-./web-qa scan --target="https://example.com" --depth=2 --fast-mode
+go run main.go scan --target="https://example.com" --depth=2 --fast-mode
 ```
 
 **Contoh Audit Dashboard (Menggunakan Login State):**
 
 ```bash
-./web-qa scan --target="https://example.com/admin" --depth=3 --auth-json="./session.json"
+go run main.go scan --target="https://example.com/admin" --depth=3 --auth-json="./session.json"
 ```
 
 ### 2. `baseline` - The Pristine Snapshot
@@ -196,7 +222,7 @@ Ini adalah mode palu godam. Bot akan merayap ke dalam, merekam anomali jaringan,
 Perintah ini akan menyuruh bot berjalan-jalan dengan Sangat Sopan (Tanpa meretas/klik paksa). Ia akan menunggu sampai animasi halaman web selesai lalu diam-diam merekam _screenshot layout_ yang sempurna (_Baseline_).
 
 ```bash
-./web-qa baseline --target="https://example.com" --depth=2
+go run main.go baseline --target="https://example.com" --depth=2
 ```
 
 _Barang bukti foto murni akan secara otomatis dikelompokkan ke folder harian: `proofs/<DD-MM-YYYY>/baseline/`_
@@ -206,7 +232,7 @@ _Barang bukti foto murni akan secara otomatis dikelompokkan ke folder harian: `p
 Kapanpun tim _developer_ Anda mencurigai perubahan kode `CSS/Frontend` merusak tampilan, jalankan kode ini! Ia akan mencocokkan kondisi website hari ini dengan histori foto _Baseline_ Anda. Secara otomatis program akan membandingkannya dengan _baseline_ di hari yang sama, namun Anda dapat merujuk ke tanggal _baseline_ masa lalu melalui parameter `--baseline-date`.
 
 ```bash
-./web-qa compare --target="https://example.com" --depth=2 --baseline-date="22-02-2026"
+go run main.go compare --target="https://example.com" --depth=2 --baseline-date="22-02-2026"
 ```
 
 _Hasil perhitungan pergeseran visualnya dicetak ke `visual_regression_report.md` beserta foto kemerah-merahannya di folder hari ini: `proofs/<DD-MM-YYYY>/diff/`_.
@@ -216,7 +242,7 @@ _Hasil perhitungan pergeseran visualnya dicetak ke `visual_regression_report.md`
 Perintah ini akan berkeliling web Anda khusus untuk melakukan perhitungan matematis rasio kontras warna dan kelengkapan struktur HTML bagi pembaca layar Tuna Netra (WCAG Standards).
 
 ```bash
-./web-qa a11y --target="https://example.com"
+go run main.go a11y --target="https://example.com"
 ```
 
 _Daftar elemen navigasi/tombol yang cacat dan melanggar standar disabilitas akan didokumentasikan di dalam `accessibility_audit_report.md`._
@@ -227,10 +253,10 @@ Menguji kekuatan otot _Server API_ / Infrastruktur web Anda. Pisau bedah paling 
 
 ```bash
 # Contoh 1: Pengetesan biasa (GET)
-./web-qa load --target="https://example.com/api" --users=500 --duration=30s
+go run main.go load --target="https://example.com/api" --users=500 --duration=30s
 
 # Contoh 2: Serangan Database murni dengan injeksi Dynamic JSON Cache-Busting (POST)
-./web-qa load --target="https://example.com/api/register" --method="POST" --body-json='{"email": "hacked_{{RANDOM}}@mail.com"}' --users=200 --duration=15s
+go run main.go load --target="https://example.com/api/register" --method="POST" --body-json='{"email": "hacked_{{RANDOM}}@mail.com"}' --users=200 --duration=15s
 ```
 
 _Sistem akan menghujani target dengan ratusan Goroutines (Simulasi pengguna bersamaan). Tag `{{RANDOM}}` akan mencetak string acak per koneksi sehingga Cloudflare Cache tidak bisa menolong server target Anda. Hasil dicetak ke dalam `load_test_report.md`._
