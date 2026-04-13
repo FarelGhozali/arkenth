@@ -8,8 +8,9 @@ import (
 )
 
 var scanCmd = &cobra.Command{
-	Use:   "scan",
-	Short: "Start the automated QA scanning and fuzzing sequence",
+	Use:      "scan",
+	Short:    "Start the automated QA scanning and fuzzing sequence",
+	PreRunE:  RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Enterprise Web QA Scan...")
 

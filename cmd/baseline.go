@@ -10,8 +10,9 @@ import (
 )
 
 var baselineCmd = &cobra.Command{
-	Use:   "baseline",
-	Short: "Take a pristine snapshot of the target URLs to act as visual baselines",
+	Use:      "baseline",
+	Short:    "Take a pristine snapshot of the target URLs to act as visual baselines",
+	PreRunE:  RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Visual Baseline Crawl...")
 

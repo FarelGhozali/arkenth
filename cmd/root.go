@@ -47,8 +47,7 @@ func init() {
 	viper.BindPFlag("record-video", rootCmd.PersistentFlags().Lookup("record-video"))
 	viper.BindPFlag("fast-mode", rootCmd.PersistentFlags().Lookup("fast-mode"))
 
-	// Mark target as required
-	rootCmd.MarkPersistentFlagRequired("target")
+	// Note: target is validated per-command (not globally) so that `ui` can run without it.
 }
 
 func initConfig() {
@@ -59,3 +58,12 @@ func initConfig() {
 		fmt.Printf("Initialization Settings:\n- Target: %s\n- Depth: %d\n", AppConfig.Target, AppConfig.Depth)
 	}
 }
+
+// RequireTarget is a PreRunE hook for commands that need --target set.
+func RequireTarget(cmd *cobra.Command, args []string) error {
+	if AppConfig == nil || AppConfig.Target == "" {
+		return fmt.Errorf("required flag \"target\" not set")
+	}
+	return nil
+}
+

@@ -13,8 +13,9 @@ import (
 var baselineDate string
 
 var compareCmd = &cobra.Command{
-	Use:   "compare",
-	Short: "Run a visual crawl and compare current screenshots pixel-by-perfectly with /baseline",
+	Use:      "compare",
+	Short:    "Run a visual crawl and compare current screenshots pixel-by-perfectly with /baseline",
+	PreRunE:  RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Visual Compare Crawl...")
 

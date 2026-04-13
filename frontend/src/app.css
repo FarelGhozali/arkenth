@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--p) / 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--p) / 0.5);
+}
+
+/* Glow effects using DaisyUI v4 HSL variables */
+.glow-primary {
+  box-shadow: 0 0 20px hsl(var(--p) / 0.25), 0 0 60px hsl(var(--p) / 0.1);
+}
+.glow-success {
+  box-shadow: 0 0 20px hsl(var(--su) / 0.25), 0 0 60px hsl(var(--su) / 0.1);
+}
+.glow-error {
+  box-shadow: 0 0 20px hsl(var(--er) / 0.25), 0 0 60px hsl(var(--er) / 0.1);
+}
+.glow-warning {
+  box-shadow: 0 0 20px hsl(var(--wa) / 0.25), 0 0 60px hsl(var(--wa) / 0.1);
+}
+
+/* Pulse animation for running status */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}

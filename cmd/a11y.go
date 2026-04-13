@@ -9,8 +9,9 @@ import (
 )
 
 var a11yCmd = &cobra.Command{
-	Use:   "a11y",
-	Short: "Run an accessibility (WCAG) audit on the target URLs",
+	Use:      "a11y",
+	Short:    "Run an accessibility (WCAG) audit on the target URLs",
+	PreRunE:  RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Accessibility Audit...")
 

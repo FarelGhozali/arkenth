@@ -1,8 +1,8 @@
 # 🕵️‍♂️ Enterprise Web QA Automation CLI
 
-Sebuah _framework Command Line Interface_ (CLI) pengujian otomatis (_Automated QA Testing_) level _Enterprise_ yang ditulis menggunakan **Go**, **Cobra**, dan **Playwright-Go**.
+Sebuah _framework_ pengujian otomatis (_Automated QA Testing_) level _Enterprise_ yang ditulis menggunakan **Go**, **Cobra**, dan **Playwright-Go**, dilengkapi dengan **Web UI Dashboard** berbasis **Svelte + Vite** yang tersemat langsung ke dalam satu _executable binary_.
 
-Alat ini dirancang khusus untuk para _Quality Assurance Engineer_, _Bug Bounty Hunters_, dan _Security Researchers_ yang membutuhkan pemindai web yang sangat masif, modular, dan cepat. Berbeda dari _web crawler_ biasa, CLI ini tidak cuma membuka halaman web, namun ia secara aktif "menyerang" (_fuzzing_), menyadap seluruh aliran internet (_network interception_), dan bahkan melakukan perbandingan desain piksel UI!
+Alat ini dirancang khusus untuk para _Quality Assurance Engineer_, _Bug Bounty Hunters_, dan _Security Researchers_ yang membutuhkan pemindai web yang sangat masif, modular, dan cepat. Anda dapat menggunakannya melalui **CLI (Command Line)** maupun **Web Dashboard** yang modern dan intuitif — tanpa perlu mengetik _command_ sama sekali! Berbeda dari _web crawler_ biasa, alat ini tidak cuma membuka halaman web, namun ia secara aktif "menyerang" (_fuzzing_), menyadap seluruh aliran internet (_network interception_), dan bahkan melakukan perbandingan desain piksel UI!
 
 ---
 
@@ -58,6 +58,19 @@ Menginjeksi pustaka standar industri `axe-core` ke dalam otak Playwright untuk m
 Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Browser) untuk menembakkan ribuan permintaan HTTP secara serentak ke mesin _Server/API_.
 **Dukungan Stateful POST/Bypass Cache:** Bot load-tester ini mampu menembakkan lalu lintas HTTP `POST/PUT` seraya merubah-rubah _Payload JSON_ secara dinamis di setiap tembakan. Contoh: `{"email": "user_{{RANDOM}}@test.com"}` guna memaksa lalu lintas menembus blokade _Cache CDN Cloudflare_ dan langsung meledakkan _Database Server_ Anda sesungguhnya.
 
+### 8. 🖥️ Web UI Dashboard (Embedded SPA)
+
+Tidak ingin repot mengetik perintah CLI? Seluruh fitur di atas kini dapat diakses melalui **Web Dashboard** bergaya modern yang tersemat langsung di dalam _executable binary_ Go!
+
+- **Teknologi:** Frontend dibangun menggunakan **Svelte + Vite** dengan _styling_ **Tailwind CSS + DaisyUI** (Tema gelap _"Night"_).
+- **Arsitektur _Single Binary_:** Saat proses `go build`, seluruh aset frontend (HTML/CSS/JS) di-_embed_ ke dalam _binary_ Go menggunakan `go:embed`. Hasilnya? Satu file aplikasi utuh yang sudah mencakup UI + Mesin QA sekaligus, tanpa ketergantungan eksternal (Node.js, npm, dsb).
+- **REST API Builtin:** Backend Go menyediakan endpoint `/api/run` yang menerima _payload_ JSON dari UI dan menjalankan mesin _scanner/fuzzer/load-tester_ secara asinkron di _background_ menggunakan _goroutines_.
+- **Fitur UI:**
+  - Formulir lengkap: Target URL, Depth Slider, Mobile Emulation, Auth JSON, toggle Fast Mode & Record Video.
+  - Halaman khusus untuk setiap perintah: Scan, Baseline, Compare, A11y, dan Load Test.
+  - Panel status dan log _real-time_ untuk memantau kemajuan bot.
+  - Sidebar navigasi yang dapat diciutkan (_collapsible_).
+
 ---
 
 ## ⚙️ Petunjuk Pemasangan (Instalasi)
@@ -89,7 +102,17 @@ Dirancang ulang menggunakan _Goroutines_ bahasa Go tingkat rendah (tanpa GUI Bro
    go run github.com/playwright-community/playwright-go/cmd/playwright@latest install --with-deps
    ```
 
-4. **Kompilasi CLI Build (Ubah jadi File '.exe')**:
+4. **Build Frontend (Web UI Dashboard)**:
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   cd ..
+   ```
+
+5. **Kompilasi CLI Build (Ubah jadi File '.exe')**:
+
+   Proses ini akan otomatis menyertakan (_embed_) aset Web UI yang sudah di-_build_ pada langkah sebelumnya ke dalam file _binary_.
    ```bash
    go build -o web-qa
    ```
@@ -130,7 +153,27 @@ Workflow Docker ada di `.github/workflows/docker.yml` dengan perilaku:
 
 ## 📖 Buku Panduan Penggunaan (Commands & Flags)
 
-Aplikasi ini menggunakan teknologi Command-Line dari `spf13/cobra`. File binari (_executable_) yang telah di-_build_ menyajikan tiga perintah sakti:
+Aplikasi ini menggunakan teknologi Command-Line dari `spf13/cobra`. File binari (_executable_) yang telah di-_build_ menyajikan dua mode operasi: **Web Dashboard** (UI) dan **CLI** (Command Line).
+
+### 0. `ui` - 🖥️ Web Dashboard (Tanpa Perlu Mengetik Command!)
+
+Ini adalah cara termudah untuk menggunakan seluruh fitur aplikasi ini. Cukup jalankan satu perintah, dan seluruh _Dashboard_ akan terbuka di _browser_ Anda:
+
+```bash
+./web-qa ui
+```
+
+Dashboard akan berjalan di `http://localhost:8080`. Anda dapat mengubah port dengan flag `--port`:
+
+```bash
+./web-qa ui --port 3000
+```
+
+Dari antarmuka web ini, Anda bisa langsung mengisi Target URL, mengatur semua opsi (Depth, Fast Mode, Mobile Emulation, dsb), dan menekan tombol untuk menjalankan _Scan_, _Baseline_, _Compare_, _A11y_, atau _Load Test_ — semuanya tanpa mengetik perintah CLI sama sekali.
+
+> **Catatan:** Semua perintah CLI di bawah ini tetap tersedia dan berfungsi penuh bagi Anda yang lebih suka menggunakan terminal.
+
+Berikut adalah perintah-perintah CLI yang tersedia:
 
 ### 1. `scan` - The Functional Security Audit
 
@@ -223,11 +266,12 @@ Setiap kali bot selesai mengemban misinya, Anda akan meraup sekumpulan emas Data
 
 ## 🛡️ Disclaimer (Peringatan Penting Hukum)
 
-Aplikasi _Command-line_ ini dirakit dengan teknik manipulasi DOM tingkat tinggi dan algoritma _Form-Fuzzing_ agresif.
+Aplikasi ini dirakit dengan teknik manipulasi DOM tingkat tinggi dan algoritma _Form-Fuzzing_ agresif.
 
 1. **Jangan PERNAH menjalankan instruksi `scan` di aplikasi Produksi/Server Utama tanpa sepengetahuan Atasan/Pemilik IT.** Active Fuzzing akan mengirim ratusan entri aneh (Emoji, karakter pembobol SQL) ke Form Kontak Terbuka, Database, maupun Registrasi Web. Ini bisa memicu alarm keamanan AWS/Cloudflare atau merusak (_corrupting_) Database asli.
 2. Selalu arahkan atribut `--target` ke lingkungan _Sandbox_, _Localhost_, atau _Staging Server_ demi keselamatan Anda.
 3. Modul Visual (`baseline` & `compare`) bersifat mode _Read-Only_ dan **100% aman** untuk dipergunakan pada situs yang tayang (Live/Produksi).
+4. **Web Dashboard (`ui`)** secara _default_ hanya bisa diakses dari _localhost_ (komputer lokal Anda). Jangan mengekspos port dashboard ini ke internet publik tanpa memasang sistem _authentication_ tambahan.
 
 ---
 
