@@ -70,6 +70,13 @@ Fitur ini memungkinkan Anda (maupun tim QA non-teknis internal Anda) untuk mengo
 - **Log Visual Terpadu:** Alih-alih membaca teks hitam-putih bergerak cepat di Terminal, Dashboard menyajikan laporan status *real-time* yang enak dipandang (mendukung Tema Gelap/Night Mode).
 - **Asinkron & Background Task:** Setelah Anda menekan tombol "Mulai Scan" di web, Anda bisa meninggalkan halaman itu. CLI akan mengeksekusi operasi berat tersebut di *background*.
 
+### 9. 🪟 Desktop Application (Native Wails)
+
+Bagi Anda yang lebih suka aplikasi *standalone* layaknya program profesional, kami juga menyediakan jembatan ke format **Aplikasi Desktop Desktop** menggunakan *framework* Wails. 
+Fitur Desktop ini memberikan pengalaman UI/UX yang jauh lebih kuat dibandingkan versi *Web Dashboard* berkat kemampuannya untuk meng-intervensi dan merender seluruh lalu-lintas **Terminal Go Log** langsung ke lapisan antarmuka grafis secara *Real-Time*.
+- **Tanpa Localhost:** Aplikasi berjalan mandiri tanpa harus memaksa *user* membuka *browser* atau bingung mengatur *port* jaringan lokal.
+- **Transparansi Pekerjaan (Live Logs):** Pergerakan kursor dan log bot penyerang dikirim sedetik itu juga (*live stream*) ke layar *dashboard* Desktop Anda!
+
 ---
 
 ## ⚙️ Petunjuk Pemasangan (Instalasi)
@@ -115,6 +122,21 @@ Fitur ini memungkinkan Anda (maupun tim QA non-teknis internal Anda) untuk mengo
    ```bash
    go build -o qa-bot
    ```
+
+6. **Kompilasi Menjadi Aplikasi Desktop (Opsional - Mode Wails):**
+
+   Jika sistem Anda telah mendukung prasyarat *library WebView/GTK* Wails, Anda bisa mengubah ekosistem CGO di atas menjadi aplikasi `.exe` atau `.app` *desktop window* modern.
+   ```bash
+   # 1. Pastikan Wails CLI terinstall di Go Anda
+   go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+   # 2. Pindah ke direktori desktop wrapper
+   cd desktop
+
+   # 3. Rakit Aplikasinya
+   wails build
+   ```
+   *(Catatan Linux: Butuh dependensi tambahan `sudo apt install libgtk-3-dev libwebkit2gtk-4.0-dev` sebelum melakukan kompilasi GUI di atas)*
 
 ---
 

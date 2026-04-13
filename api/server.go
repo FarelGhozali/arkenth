@@ -40,9 +40,9 @@ type RunResponse struct {
 	Error   string `json:"error,omitempty"`
 }
 
-// StartServer boots the HTTP server with API routes and static file serving.
-// The staticFS parameter serves the embedded Svelte frontend.
-func StartServer(port int, staticFS http.Handler) {
+// SetupRouter creates and configures the HTTP router with API endpoints.
+// If staticFS is provided, it also serves the embedded frontend.
+func SetupRouter(staticFS http.Handler) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// API routes
@@ -53,7 +53,17 @@ func StartServer(port int, staticFS http.Handler) {
 	})
 
 	// Serve the embedded Svelte frontend for everything else
-	mux.Handle("/", staticFS)
+	if staticFS != nil {
+		mux.Handle("/", staticFS)
+	}
+
+	return mux
+}
+
+// StartServer boots the HTTP server with API routes and static file serving.
+// The staticFS parameter serves the embedded Svelte frontend.
+func StartServer(port int, staticFS http.Handler) {
+	mux := SetupRouter(staticFS)
 
 	addr := fmt.Sprintf(":%d", port)
 	log.Printf("🌐 Web QA Dashboard is live at http://localhost:%d", port)

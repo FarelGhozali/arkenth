@@ -1,4 +1,14 @@
 <script>
+  import { onMount } from 'svelte';
+  
+  onMount(() => {
+    if (window.runtime && window.runtime.EventsOn) {
+      window.runtime.EventsOn("backend-log", (msg) => {
+        addLog(msg.trim());
+      });
+    }
+  });
+
   // State management
   let currentPage = $state('scan');
   let sidebarCollapsed = $state(false);
