@@ -162,8 +162,15 @@ Setelah Anda (atau DevOps Anda) berhasil melakukan kompilasi (_build_) aplikasi 
 ./<nama-binary-anda> ui
 ```
 
-*Atau, Anda juga bisa menjalankannya langsung dari _source code_ tanpa perlu melakukan _build_ sama sekali:*
+*Atau, jika Anda baru saja melakukan `git clone` dan ingin langsung menjajal aplikasi web ini tanpa melakukan kompilasi (_build_) aplikasi Go sama sekali, Anda dapat mengeksekusi _source code_-nya secara langsung.* 
+
+*Satu hal yang perlu diperhatikan, karena aplikasi ini menggunakan teknologi `go:embed` untuk menyatukan _frontend_ dan _backend_, Anda tetap harus menyiapkan aset webnya terlebih dahulu sebelum Golang bisa menyala:*
+
 ```bash
+# 1. Siapkan aset file Svelte dan Tailwind
+cd frontend && npm install && npm run build && cd ..
+
+# 2. Nyalakan server utama secara langsung
 go run main.go ui
 ```
 
