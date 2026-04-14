@@ -535,20 +535,30 @@
                   <span class="label-text font-semibold">👥 Virtual Users</span>
                   <span class="label-text-alt badge badge-primary badge-sm">{users}</span>
                 </label>
-                <input
-                  id="input-users"
-                  type="range"
-                  min="10" max="1000" step="10"
-                  class="range range-primary range-sm"
-                  bind:value={users}
-                />
-                <div class="flex justify-between px-1 mt-1">
-                  <span class="text-xs text-base-content/40">10</span>
-                  <span class="text-xs text-base-content/40">250</span>
-                  <span class="text-xs text-base-content/40">500</span>
-                  <span class="text-xs text-base-content/40">750</span>
-                  <span class="text-xs text-base-content/40">1000</span>
+                <div class="join w-full">
+                  <input
+                    id="input-users-range"
+                    type="range"
+                    min="10" max="5000" step="10"
+                    class="range range-primary range-sm join-item"
+                    bind:value={users}
+                  />
+                  <input
+                    id="input-users"
+                    type="number"
+                    min="1"
+                    class="input input-bordered input-sm w-24 font-mono join-item"
+                    bind:value={users}
+                  />
                 </div>
+                <div class="flex justify-between px-1 mt-1">
+                  <span class="text-[10px] text-base-content/40">10</span>
+                  <span class="text-[10px] text-base-content/40">2500</span>
+                  <span class="text-[10px] text-base-content/40">5000+</span>
+                </div>
+                {#if users > 1000}
+                  <span class="text-[10px] text-warning mt-1 italic">⚠️ High concurrency may be limited by your local OS (ulimit/sockets).</span>
+                {/if}
               </div>
               
               <!-- Duration -->

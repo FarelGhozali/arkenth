@@ -27,7 +27,12 @@ func RunLoadTest(targetURL string, users int, duration time.Duration, method str
 	var totalReq, successReq, errReq int64
 
 	// Channels to communicate latency. Make it buffered to avoid blocking routines.
-	latencyCh := make(chan time.Duration, users*1000)
+	// Cap buffer at 1M to prevent OOM on extremely high user counts
+	bufferSize := users * 1000
+	if bufferSize > 1000000 {
+		bufferSize = 1000000
+	}
+	latencyCh := make(chan time.Duration, bufferSize)
 
 	// Stop channel
 	stopCh := make(chan struct{})
