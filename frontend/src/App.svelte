@@ -70,13 +70,13 @@
   async function executeJob(command) {
     if (!target) {
       jobStatus = 'error';
-      jobMessage = 'Target URL wajib diisi!';
+      jobMessage = 'Target URL is required!';
       return;
     }
     
     jobStatus = 'running';
-    jobMessage = `Menjalankan ${command.toUpperCase()}...`;
-    addLog(`▶ Memulai ${command} terhadap ${target}`);
+    jobMessage = `Running ${command.toUpperCase()}...`;
+    addLog(`▶ Starting ${command} against ${target}`);
     
     const payload = {
       project_name: projectName,
@@ -111,17 +111,17 @@
       
       if (res.ok) {
         jobStatus = 'success';
-        jobMessage = data.message || `${command} selesai!`;
-        addLog(`✅ ${command} berhasil diselesaikan.`);
+        jobMessage = data.message || `${command} completed!`;
+        addLog(`✅ ${command} completed successfully.`);
       } else {
         jobStatus = 'error';
-        jobMessage = data.error || 'Terjadi kesalahan.';
+        jobMessage = data.error || 'An error occurred.';
         addLog(`❌ Error: ${data.error}`);
       }
     } catch (err) {
       jobStatus = 'error';
-      jobMessage = `Koneksi gagal: ${err.message}`;
-      addLog(`❌ Koneksi ke server gagal: ${err.message}`);
+      jobMessage = `Connection failed: ${err.message}`;
+      addLog(`❌ Connection to server failed: ${err.message}`);
     }
   }
   
@@ -211,7 +211,7 @@
         class="w-full btn btn-ghost btn-sm text-base-content/50"
         onclick={() => sidebarCollapsed = !sidebarCollapsed}
       >
-        {sidebarCollapsed ? '→' : '← Ciutkan'}
+        {sidebarCollapsed ? '→' : '← Collapse'}
       </button>
     </div>
   </aside>
@@ -233,14 +233,14 @@
       {#if jobStatus === 'running'}
         <div class="badge badge-warning gap-2 animate-pulse-glow py-3 px-4">
           <span class="loading loading-spinner loading-xs"></span>
-          Sedang Berjalan...
+          Running...
         </div>
       {:else if jobStatus === 'success'}
-        <div class="badge badge-success gap-2 py-3 px-4">✅ Berhasil</div>
+        <div class="badge badge-success gap-2 py-3 px-4">✅ Success</div>
       {:else if jobStatus === 'error'}
-        <div class="badge badge-error gap-2 py-3 px-4">❌ Gagal</div>
+        <div class="badge badge-error gap-2 py-3 px-4">❌ Failed</div>
       {:else}
-        <div class="badge badge-ghost gap-2 py-3 px-4">⏸️ Siap</div>
+        <div class="badge badge-ghost gap-2 py-3 px-4">⏸️ Ready</div>
       {/if}
     </header>
     
@@ -252,7 +252,7 @@
       <div class="card bg-base-200 shadow-xl border border-base-content/5 mb-6 animate-fade-in">
         <div class="card-body">
           <h3 class="card-title text-base-content text-lg mb-4">
-            ⚙️ Konfigurasi Umum
+            ⚙️ General Configuration
           </h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -287,7 +287,7 @@
             <!-- Depth -->
             <div class="form-control">
               <label class="label" for="input-depth">
-                <span class="label-text font-semibold">📏 Kedalaman Crawl</span>
+                <span class="label-text font-semibold">📏 Crawl Depth</span>
                 <span class="label-text-alt badge badge-primary badge-sm">{depth}</span>
               </label>
               <input
@@ -307,7 +307,7 @@
             <!-- Mobile Emulation -->
             <div class="form-control">
               <label class="label" for="input-mobile">
-                <span class="label-text font-semibold">📱 Emulasi Mobile</span>
+                <span class="label-text font-semibold">📱 Mobile Emulation</span>
               </label>
               <select id="input-mobile" class="select select-bordered select-sm w-full" bind:value={mobileEmulation}>
                 <option value="">Desktop (Default)</option>
@@ -339,7 +339,7 @@
               <input id="toggle-fast" type="checkbox" class="toggle toggle-primary toggle-sm" bind:checked={fastMode} />
             </label>
             <label class="label cursor-pointer gap-3" for="toggle-video">
-              <span class="label-text text-sm">🎥 Rekam Video</span>
+              <span class="label-text text-sm">🎥 Record Video</span>
               <input id="toggle-video" type="checkbox" class="toggle toggle-secondary toggle-sm" bind:checked={recordVideo} />
             </label>
           </div>
@@ -357,8 +357,8 @@
               🔍 Security Scan & Fuzzing
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
-              Bot akan merayap ke target, menyadap jaringan, melakukan Form Injection, Rage Clicks, dan JWT Token Tampering. 
-              Semua anomali jaringan akan dicatat secara otomatis.
+              The bot will crawl the target, intercept network traffic, perform Form Injection, Rage Clicks, and JWT Token Tampering. 
+              All network anomalies will be automatically logged.
             </p>
             
             <div class="flex flex-wrap gap-3">
@@ -369,11 +369,11 @@
                 </div>
                 <div class="stat px-4 py-3">
                   <div class="stat-title text-xs">Fuzzing</div>
-                  <div class="stat-value text-sm text-warning">Aktif</div>
+                  <div class="stat-value text-sm text-warning">Active</div>
                 </div>
                 <div class="stat px-4 py-3">
                   <div class="stat-title text-xs">Interception</div>
-                  <div class="stat-value text-sm text-success">Aktif</div>
+                  <div class="stat-value text-sm text-success">Active</div>
                 </div>
               </div>
             </div>
@@ -388,7 +388,7 @@
                 {#if jobStatus === 'running' && currentPage === 'scan'}
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
-                🚀 Mulai Scan
+                🚀 Start Scan
               </button>
             </div>
           </div>
@@ -399,16 +399,16 @@
         <div class="card bg-base-200 shadow-xl border border-base-content/5 animate-fade-in">
           <div class="card-body">
             <h3 class="card-title text-base-content">
-              📸 Ambil Baseline Screenshot
+              📸 Take Baseline Screenshot
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
-              Bot akan "berjalan sopan" (tanpa fuzzing) untuk mengambil screenshot murni dari setiap halaman. 
-              Hasil disimpan di <code class="text-primary text-xs">proofs/&lt;project_name&gt;/&lt;timestamp&gt;_baseline/</code>
+              The bot will "walk politely" (without fuzzing) to take clean screenshots of each page. 
+              Results are saved in <code class="text-primary text-xs">proofs/&lt;project_name&gt;/&lt;timestamp&gt;_baseline/</code>
             </p>
             
             <div class="alert alert-info shadow-lg">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              <span class="text-sm">Mode Read-Only: Aman untuk dijalankan bahkan di server Produksi.</span>
+              <span class="text-sm">Read-Only Mode: Safe to run even on Production servers.</span>
             </div>
 
             <div class="card-actions justify-end mt-6">
@@ -421,7 +421,7 @@
                 {#if jobStatus === 'running' && currentPage === 'baseline'}
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
-                📸 Ambil Snapshot
+                📸 Take Snapshot
               </button>
             </div>
           </div>
@@ -435,13 +435,13 @@
               🔬 Visual Regression Compare
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
-              Membandingkan tampilan website saat ini dengan baseline sebelumnya. 
-              Area yang berubah akan disiram warna Merah Terang dalam gambar "Rontgen".
+              Compare the current website appearance with a previous baseline. 
+              Changed areas will be highlighted in bright red in an "X-ray" image.
             </p>
             
             <div class="form-control max-w-sm">
               <label class="label" for="input-baseline-date">
-                <span class="label-text font-semibold">📅 Path Folder Baseline Pembanding</span>
+                <span class="label-text font-semibold">📅 Comparison Baseline Folder Path</span>
               </label>
               <input
                 id="input-baseline-date"
@@ -451,7 +451,7 @@
                 bind:value={baselineDate}
               />
               <label class="label">
-                <span class="label-text-alt text-base-content/40 text-xs">Gunakan "History Explorer" untuk mencari path baseline Anda.</span>
+                <span class="label-text-alt text-base-content/40 text-xs">Use "History Explorer" to find your baseline path.</span>
               </label>
             </div>
 
@@ -465,7 +465,7 @@
                 {#if jobStatus === 'running' && currentPage === 'compare'}
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
-                🔬 Mulai Perbandingan
+                🔬 Start Comparison
               </button>
             </div>
           </div>
@@ -479,8 +479,8 @@
               ♿ Accessibility Audit (WCAG)
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
-              Menginjeksi <code class="text-primary text-xs">axe-core</code> ke setiap halaman untuk mendeteksi pelanggaran aksesibilitas: 
-              kontras warna, ARIA labels, keyboard navigation, dan lainnya.
+              Inject axe-core into every page to detect accessibility violations: 
+              color contrast, ARIA labels, keyboard navigation, and more.
             </p>
             
             <div class="flex flex-wrap gap-3">
@@ -494,8 +494,8 @@
                   <div class="stat-value text-sm text-warning">WCAG 2.1</div>
                 </div>
                 <div class="stat px-4 py-3">
-                  <div class="stat-title text-xs">Dinamis UI</div>
-                  <div class="stat-value text-sm text-success">Ya</div>
+                  <div class="stat-title text-xs">Dynamic UI</div>
+                  <div class="stat-value text-sm text-success">Yes</div>
                 </div>
               </div>
             </div>
@@ -510,7 +510,7 @@
                 {#if jobStatus === 'running' && currentPage === 'a11y'}
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
-                ♿ Mulai Audit
+                ♿ Start Audit
               </button>
             </div>
           </div>
@@ -524,8 +524,8 @@
               🚀 Load & Stress Testing
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
-              Menembakkan ribuan HTTP request ke target secara serentak menggunakan Goroutines. 
-              Mendukung POST dengan payload dinamis <code class="text-primary text-xs">{'{{RANDOM}}'}</code>.
+              Shoot thousands of simultaneous HTTP requests at the target using Goroutines. 
+              Supports POST with dynamic payload <code class="text-primary text-xs">{'{{RANDOM}}'}</code>.
             </p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -554,7 +554,7 @@
               <!-- Duration -->
               <div class="form-control">
                 <label class="label" for="input-duration">
-                  <span class="label-text font-semibold">⏱️ Durasi</span>
+                  <span class="label-text font-semibold">⏱️ Duration</span>
                 </label>
                 <input
                   id="input-duration"
@@ -595,7 +595,7 @@
 
             <div class="alert alert-warning shadow-lg mt-4">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-              <span class="text-sm">Peringatan: Jangan jalankan load test pada server produksi tanpa izin!</span>
+              <span class="text-sm">Warning: Do not run load tests on production servers without permission!</span>
             </div>
 
             <div class="card-actions justify-end mt-6">
@@ -608,7 +608,7 @@
                 {#if jobStatus === 'running' && currentPage === 'load'}
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
-                ⚡ Mulai Load Test
+                ⚡ Start Load Test
               </button>
             </div>
           </div>
@@ -760,7 +760,7 @@
                 <div class="card-body items-center justify-center p-20 text-center opacity-30">
                   <div class="text-6xl mb-4">📂</div>
                   <div class="font-bold text-xl">Select a project to view history</div>
-                  <p class="text-sm">Tiap test run akan tercatat secara otomatis.</p>
+                  <p class="text-sm">Each test run will be automatically recorded.</p>
                 </div>
               </div>
             {/if}
@@ -793,7 +793,7 @@
             <!-- Clear -->
             <div class="card-actions justify-end mt-3">
               <button class="btn btn-ghost btn-sm" onclick={() => { jobLogs = []; resetStatus(); }}>
-                🧹 Bersihkan Log
+                🧹 Clear Log
               </button>
             </div>
           </div>
