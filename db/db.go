@@ -38,6 +38,18 @@ func Init() {
 		log.Fatalf("❌ Failed to open database: %v", err)
 	}
 
+	// Enable WAL mode for better concurrency and performance
+	_, err = DB.Exec("PRAGMA journal_mode=WAL;")
+	if err != nil {
+		log.Printf("⚠️ Warning: Failed to set WAL mode: %v", err)
+	}
+
+	// Set busy timeout to 5 seconds to avoid "database is locked" errors
+	_, err = DB.Exec("PRAGMA busy_timeout=5000;")
+	if err != nil {
+		log.Printf("⚠️ Warning: Failed to set busy_timeout: %v", err)
+	}
+
 	createTableQuery := `
 	CREATE TABLE IF NOT EXISTS runs (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
