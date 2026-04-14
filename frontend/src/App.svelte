@@ -14,6 +14,7 @@
   let sidebarCollapsed = $state(false);
   
   // Global config (shared across pages)
+  let projectName = $state('default');
   let target = $state('');
   let depth = $state(1);
   let fastMode = $state(false);
@@ -35,6 +36,14 @@
   let jobMessage = $state('');
   let jobLogs = $state([]);
   
+  // History Explorer State
+  let projects = $state([]);
+  let selectedProject = $state('');
+  let history = $state([]);
+  let selectedRun = $state(null);
+  let gallery = $state({ images: [], reports: [] });
+  let loadingHistory = $state(false);
+  
   // API base URL — same origin when embedded in Go
   const API_BASE = '/api';
   
@@ -45,6 +54,7 @@
     { id: 'compare', label: 'Compare', icon: '🔬', desc: 'Visual Regression' },
     { id: 'a11y', label: 'A11y', icon: '♿', desc: 'Accessibility Audit' },
     { id: 'load', label: 'Load Test', icon: '🚀', desc: 'Stress Testing' },
+    { id: 'history', label: 'History', icon: '📂', desc: 'Results Explorer' },
   ];
   
   const mobileDevices = [
@@ -69,6 +79,7 @@
     addLog(`▶ Memulai ${command} terhadap ${target}`);
     
     const payload = {
+      project_name: projectName,
       command,
       target,
       depth,
@@ -118,6 +129,40 @@
     jobStatus = 'idle';
     jobMessage = '';
   }
+
+  // History Functions
+  async function loadProjects() {
+    try {
+      const res = await fetch(`${API_BASE}/projects`);
+      if (res.ok) projects = await res.json();
+    } catch (err) { console.error(err); }
+  }
+
+  async function loadHistory(proj) {
+    selectedProject = proj;
+    loadingHistory = true;
+    selectedRun = null;
+    gallery = { images: [], reports: [] };
+    try {
+      const res = await fetch(`${API_BASE}/history?project=${encodeURIComponent(proj)}`);
+      if (res.ok) history = await res.json();
+    } catch (err) { console.error(err); }
+    loadingHistory = false;
+  }
+
+  async function viewRun(run) {
+    selectedRun = run;
+    try {
+      const res = await fetch(`${API_BASE}/gallery?dir=${encodeURIComponent(run.report_dir)}`);
+      if (res.ok) gallery = await res.json();
+    } catch (err) { console.error(err); }
+  }
+
+  $effect(() => {
+    if (currentPage === 'history') {
+      loadProjects();
+    }
+  });
 </script>
 
 <!-- LAYOUT -->
@@ -201,6 +246,8 @@
     
     <!-- PAGE CONTENT -->
     <div class="flex-1 overflow-y-auto p-8">
+      
+      {#if currentPage !== 'history'}
       <!-- SHARED CONFIG CARD (Global) -->
       <div class="card bg-base-200 shadow-xl border border-base-content/5 mb-6 animate-fade-in">
         <div class="card-body">
@@ -209,8 +256,22 @@
           </h3>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Project Name -->
+            <div class="form-control col-span-1 md:col-span-1">
+              <label class="label" for="input-project">
+                <span class="label-text font-semibold">📁 Project Name</span>
+              </label>
+              <input
+                id="input-project"
+                type="text"
+                placeholder="default"
+                class="input input-bordered input-primary w-full"
+                bind:value={projectName}
+              />
+            </div>
+
             <!-- Target URL -->
-            <div class="form-control col-span-1 md:col-span-2 lg:col-span-3">
+            <div class="form-control col-span-1 md:col-span-1 lg:col-span-2">
               <label class="label" for="input-target">
                 <span class="label-text font-semibold">🎯 Target URL <span class="text-error">*</span></span>
               </label>
@@ -284,6 +345,7 @@
           </div>
         </div>
       </div>
+      {/if}
       
       <!-- COMMAND-SPECIFIC CARDS -->
       
@@ -341,7 +403,7 @@
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
               Bot akan "berjalan sopan" (tanpa fuzzing) untuk mengambil screenshot murni dari setiap halaman. 
-              Hasil disimpan di <code class="text-primary text-xs">proofs/&lt;tanggal&gt;/baseline/</code>
+              Hasil disimpan di <code class="text-primary text-xs">proofs/&lt;project_name&gt;/&lt;timestamp&gt;_baseline/</code>
             </p>
             
             <div class="alert alert-info shadow-lg">
@@ -379,17 +441,17 @@
             
             <div class="form-control max-w-sm">
               <label class="label" for="input-baseline-date">
-                <span class="label-text font-semibold">📅 Tanggal Baseline Pembanding</span>
+                <span class="label-text font-semibold">📅 Path Folder Baseline Pembanding</span>
               </label>
               <input
                 id="input-baseline-date"
                 type="text"
-                placeholder="DD-MM-YYYY (kosongkan = hari ini)"
+                placeholder="proofs/my-project/2026-01-01_12-00-00_baseline"
                 class="input input-bordered input-sm w-full font-mono"
                 bind:value={baselineDate}
               />
               <label class="label">
-                <span class="label-text-alt text-base-content/40">Biarkan kosong untuk membandingkan dengan baseline hari ini</span>
+                <span class="label-text-alt text-base-content/40 text-xs">Gunakan "History Explorer" untuk mencari path baseline Anda.</span>
               </label>
             </div>
 
@@ -549,6 +611,159 @@
                 ⚡ Mulai Load Test
               </button>
             </div>
+          </div>
+        </div>
+
+      <!-- HISTORY EXPLORER PAGE -->
+      {:else if currentPage === 'history'}
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
+          <!-- Project List -->
+          <div class="lg:col-span-1 space-y-4">
+            <div class="card bg-base-200 shadow border border-base-content/5">
+              <div class="card-body p-4">
+                <h3 class="font-bold text-sm mb-2 uppercase tracking-wider text-base-content/50">Projects</h3>
+                <div class="space-y-1">
+                  {#each projects as p}
+                    <button 
+                      class="btn btn-sm w-full justify-start {selectedProject === p ? 'btn-primary' : 'btn-ghost'}"
+                      onclick={() => loadHistory(p)}
+                    >
+                      📁 {p}
+                    </button>
+                  {:else}
+                    <div class="text-xs opacity-50 p-2 text-center">No projects found.</div>
+                  {/each}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- History List & Details -->
+          <div class="lg:col-span-3 space-y-6">
+            {#if selectedProject}
+              <div class="card bg-base-200 shadow border border-base-content/5">
+                <div class="card-body p-4">
+                  <h3 class="font-bold text-lg mb-4">📜 History: {selectedProject}</h3>
+                  
+                  {#if loadingHistory}
+                    <div class="flex justify-center p-8"><span class="loading loading-spinner loading-lg"></span></div>
+                  {:else}
+                    <div class="overflow-x-auto">
+                      <table class="table table-sm w-full">
+                        <thead>
+                          <tr>
+                            <th>Type</th>
+                            <th>Timestamp</th>
+                            <th>URL</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {#each history as run}
+                            <tr class={selectedRun?.id === run.id ? 'bg-base-300' : ''}>
+                              <td><div class="badge badge-outline badge-xs">{run.test_type}</div></td>
+                              <td class="text-xs font-mono">{run.timestamp}</td>
+                              <td class="text-xs truncate max-w-[150px]">{run.target_url}</td>
+                              <td>
+                                <div class="badge {run.status === 'completed' ? 'badge-success' : 'badge-error'} badge-xs">
+                                  {run.status}
+                                </div>
+                              </td>
+                              <td>
+                                <button class="btn btn-xs btn-ghost" onclick={() => viewRun(run)}>👁️ View</button>
+                              </td>
+                            </tr>
+                          {/each}
+                        </tbody>
+                      </table>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+
+              <!-- Gallery View -->
+              {#if selectedRun}
+                <div class="card bg-base-200 shadow border border-base-content/5 animate-fade-in">
+                  <div class="card-body p-6">
+                    <div class="flex justify-between items-start mb-6">
+                      <div>
+                        <h3 class="font-bold text-xl">🖼️ Gallery & Results</h3>
+                        <p class="text-xs opacity-50 font-mono mt-1">{selectedRun.report_dir}</p>
+                      </div>
+                      <div class="flex gap-2">
+                        {#if selectedRun.test_type === 'baseline'}
+                          <button 
+                            class="btn btn-xs btn-outline btn-secondary"
+                            onclick={() => { 
+                              baselineDate = selectedRun.report_dir; 
+                              currentPage = 'compare';
+                            }}
+                          >
+                            Set as Baseline for Compare
+                          </button>
+                        {/if}
+                      </div>
+                    </div>
+
+                    <!-- Images Grid -->
+                    {#if gallery.images.length > 0}
+                      <h4 class="font-bold text-sm mb-3">Screenshots</h4>
+                      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {#each gallery.images as img}
+                          <div class="group relative rounded-lg overflow-hidden border border-base-content/10 shadow-sm aspect-video bg-base-300">
+                            <img 
+                              src="/{selectedRun.report_dir}/{img}" 
+                              alt={img}
+                              class="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                              onclick={() => window.open(`/${selectedRun.report_dir}/${img}`, '_blank')}
+                            />
+                            <div class="absolute bottom-0 left-0 right-0 bg-black/60 p-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                              {img}
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+
+                    <!-- Reports List -->
+                    {#if gallery.reports.length > 0}
+                      <h4 class="font-bold text-sm mb-3 mt-6">Generated Reports</h4>
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {#each gallery.reports as rpt}
+                          <div class="flex items-center gap-3 p-3 bg-base-300 rounded-lg border border-base-content/5">
+                            <span class="text-xl">📄</span>
+                            <div class="flex-1 overflow-hidden">
+                              <div class="text-sm font-semibold truncate">{rpt}</div>
+                              <div class="text-[10px] opacity-40 uppercase">{rpt.split('.').pop()}</div>
+                            </div>
+                            <a 
+                              href="/{selectedRun.report_dir}/{rpt}" 
+                              target="_blank" 
+                              class="btn btn-xs btn-primary"
+                            >
+                              Open
+                            </a>
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
+
+                    {#if gallery.images.length === 0 && gallery.reports.length === 0}
+                      <div class="alert alert-info">No visual proofs found in this directory.</div>
+                    {/if}
+                  </div>
+                </div>
+              {/if}
+            {:else}
+              <div class="card bg-base-200 shadow border border-base-content/5">
+                <div class="card-body items-center justify-center p-20 text-center opacity-30">
+                  <div class="text-6xl mb-4">📂</div>
+                  <div class="font-bold text-xl">Select a project to view history</div>
+                  <p class="text-sm">Tiap test run akan tercatat secara otomatis.</p>
+                </div>
+              </div>
+            {/if}
           </div>
         </div>
       {/if}
