@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"web-qa-automation/models"
+	"github.com/FarelGhozali/web-qa-automation/models"
 
 	"github.com/playwright-community/playwright-go"
 )

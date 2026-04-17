@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"web-qa-automation/a11y"
-	"web-qa-automation/config"
-	"web-qa-automation/crawler"
-	"web-qa-automation/db"
-	"web-qa-automation/loadtester"
-	"web-qa-automation/visual"
+	"github.com/FarelGhozali/web-qa-automation/a11y"
+	"github.com/FarelGhozali/web-qa-automation/config"
+	"github.com/FarelGhozali/web-qa-automation/crawler"
+	"github.com/FarelGhozali/web-qa-automation/db"
+	"github.com/FarelGhozali/web-qa-automation/loadtester"
+	"github.com/FarelGhozali/web-qa-automation/visual"
 )
 
 // RunRequest is the JSON payload the frontend sends

@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"log"
-	"web-qa-automation/a11y"
-	"web-qa-automation/crawler"
+	"github.com/FarelGhozali/web-qa-automation/a11y"
+	"github.com/FarelGhozali/web-qa-automation/crawler"
 
 	"github.com/spf13/cobra"
 )

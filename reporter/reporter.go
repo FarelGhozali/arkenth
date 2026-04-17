@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"web-qa-automation/models"
+	"github.com/FarelGhozali/web-qa-automation/models"
 )
 
 type Reporter struct {

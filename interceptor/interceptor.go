@@ -5,8 +5,8 @@ import (
 	"log"
 	"strings"
 
-	"web-qa-automation/config"
-	"web-qa-automation/models"
+	"github.com/FarelGhozali/web-qa-automation/config"
+	"github.com/FarelGhozali/web-qa-automation/models"
 
 	"github.com/playwright-community/playwright-go"
 )

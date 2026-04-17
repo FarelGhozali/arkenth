@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"time"
-	"web-qa-automation/crawler"
-	"web-qa-automation/visual"
+	"github.com/FarelGhozali/web-qa-automation/crawler"
+	"github.com/FarelGhozali/web-qa-automation/visual"
 
 	"github.com/spf13/cobra"
 )

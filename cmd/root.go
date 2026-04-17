@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"web-qa-automation/config"
+	"github.com/FarelGhozali/web-qa-automation/config"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

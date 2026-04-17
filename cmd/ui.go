@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"web-qa-automation/api"
+	"github.com/FarelGhozali/web-qa-automation/api"
 
 	"github.com/spf13/cobra"
 )

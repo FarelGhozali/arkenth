@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"web-qa-automation/api"
-	"web-qa-automation/frontend"
+	"github.com/FarelGhozali/web-qa-automation/api"
+	"github.com/FarelGhozali/web-qa-automation/frontend"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"

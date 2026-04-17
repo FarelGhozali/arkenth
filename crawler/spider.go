@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"web-qa-automation/a11y"
-	"web-qa-automation/config"
-	"web-qa-automation/interceptor"
-	"web-qa-automation/models"
-	"web-qa-automation/reporter"
+	"github.com/FarelGhozali/web-qa-automation/a11y"
+	"github.com/FarelGhozali/web-qa-automation/config"
+	"github.com/FarelGhozali/web-qa-automation/interceptor"
+	"github.com/FarelGhozali/web-qa-automation/models"
+	"github.com/FarelGhozali/web-qa-automation/reporter"
 
 	"github.com/playwright-community/playwright-go"
 )

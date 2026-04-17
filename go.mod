@@ -1,4 +1,4 @@
-module web-qa-automation
+module github.com/FarelGhozali/web-qa-automation
 
 go 1.25.6
 
@@ -7,6 +7,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/wailsapp/wails/v2 v2.12.0
+	modernc.org/sqlite v1.48.2
 )
 
 require (
@@ -58,5 +59,4 @@ require (
 	modernc.org/libc v1.70.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.48.2 // indirect
 )

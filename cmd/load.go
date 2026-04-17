@@ -3,7 +3,7 @@ package cmd
 import (
 	"log"
 	"time"
-	"web-qa-automation/loadtester"
+	"github.com/FarelGhozali/web-qa-automation/loadtester"
 
 	"github.com/spf13/cobra"
 )
