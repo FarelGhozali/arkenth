@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"github.com/FarelGhozali/web-qa-automation/loadtester"
 	"log"
 	"time"
-	"github.com/FarelGhozali/web-qa-automation/loadtester"
 
 	"github.com/spf13/cobra"
 )
@@ -16,9 +16,9 @@ var (
 )
 
 var loadCmd = &cobra.Command{
-	Use:      "load",
-	Short:    "Run a highly concurrent HTTP load test against the target",
-	PreRunE:  RequireTarget,
+	Use:     "load",
+	Short:   "Run a highly concurrent HTTP load test against the target",
+	PreRunE: RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Printf("Starting Load Test on %s with %d users...", AppConfig.Target, users)
 

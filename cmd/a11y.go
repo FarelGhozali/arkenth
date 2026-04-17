@@ -1,17 +1,17 @@
 package cmd
 
 import (
-	"log"
 	"github.com/FarelGhozali/web-qa-automation/a11y"
 	"github.com/FarelGhozali/web-qa-automation/crawler"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
 var a11yCmd = &cobra.Command{
-	Use:      "a11y",
-	Short:    "Run an accessibility (WCAG) audit on the target URLs",
-	PreRunE:  RequireTarget,
+	Use:     "a11y",
+	Short:   "Run an accessibility (WCAG) audit on the target URLs",
+	PreRunE: RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Accessibility Audit...")
 

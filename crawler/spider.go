@@ -208,13 +208,13 @@ func (s *Spider) crawl(targetURL string, currentDepth int, browser playwright.Br
 		cleanPage.Goto(cleanURL, playwright.PageGotoOptions{WaitUntil: playwright.WaitUntilStateDomcontentloaded})
 
 		links, _ := extractInternalLinks(cleanPage, cleanURL)
-		
+
 		// [Phase 2: Advanced Feature] - Smart JS Hunt
 		hiddenAPIs, _ := scrapeJSForHiddenEndpoints(cleanPage, cleanURL)
 		if len(hiddenAPIs) > 0 {
 			log.Printf("🕵️  Smart Spider: Discovered %d hidden endpoints from Javascript on %s", len(hiddenAPIs), cleanURL)
 		}
-		
+
 		links = append(links, hiddenAPIs...)
 		cleanPage.Close()
 
@@ -295,7 +295,7 @@ func scrapeJSForHiddenEndpoints(page playwright.Page, baseURL string) ([]string,
 				}
 
 				absURL := base.ResolveReference(parsed).String()
-				
+
 				// Fetch the raw JS content using Playwright's evaluation to bypass CORS
 				jsContent, err := page.Evaluate(fmt.Sprintf(`async () => {
 					try {
@@ -316,7 +316,7 @@ func scrapeJSForHiddenEndpoints(page playwright.Page, baseURL string) ([]string,
 						if endpoint == "" {
 							endpoint = match[2]
 						}
-						
+
 						if endpoint != "" {
 							// Check if it's already a full URL or just a path
 							if !strings.HasPrefix(endpoint, "http") {

@@ -2,17 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/FarelGhozali/web-qa-automation/crawler"
 	"log"
 	"time"
-	"github.com/FarelGhozali/web-qa-automation/crawler"
 
 	"github.com/spf13/cobra"
 )
 
 var baselineCmd = &cobra.Command{
-	Use:      "baseline",
-	Short:    "Take a pristine snapshot of the target URLs to act as visual baselines",
-	PreRunE:  RequireTarget,
+	Use:     "baseline",
+	Short:   "Take a pristine snapshot of the target URLs to act as visual baselines",
+	PreRunE: RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Visual Baseline Crawl...")
 

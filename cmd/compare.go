@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"time"
 	"github.com/FarelGhozali/web-qa-automation/crawler"
 	"github.com/FarelGhozali/web-qa-automation/visual"
+	"log"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -13,9 +13,9 @@ import (
 var baselineDate string
 
 var compareCmd = &cobra.Command{
-	Use:      "compare",
-	Short:    "Run a visual crawl and compare current screenshots pixel-by-perfectly with /baseline",
-	PreRunE:  RequireTarget,
+	Use:     "compare",
+	Short:   "Run a visual crawl and compare current screenshots pixel-by-perfectly with /baseline",
+	PreRunE: RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Visual Compare Crawl...")
 

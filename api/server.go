@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -214,10 +213,10 @@ func handleGallery(w http.ResponseWriter, r *http.Request) {
 func executeScan(cfg *config.AppConfig, projectName string) {
 	timestamp := time.Now().Format("20060102_150405")
 	proofDir := fmt.Sprintf("./proofs/%s/%s_scan", projectName, timestamp)
-	
+
 	runID, _ := db.CreateRun(projectName, "scan", cfg.Target, proofDir)
 	log.Printf("[UI] Starting Scan on %s (Project: %s) ...", cfg.Target, projectName)
-	
+
 	spider := crawler.NewSpider(cfg)
 	spider.ProofDir = proofDir
 
@@ -233,10 +232,10 @@ func executeScan(cfg *config.AppConfig, projectName string) {
 func executeBaseline(cfg *config.AppConfig, projectName string) {
 	timestamp := time.Now().Format("20060102_150405")
 	proofDir := fmt.Sprintf("./proofs/%s/%s_baseline", projectName, timestamp)
-	
+
 	runID, _ := db.CreateRun(projectName, "baseline", cfg.Target, proofDir)
 	log.Printf("[UI] Starting Baseline on %s (Project: %s) ...", cfg.Target, projectName)
-	
+
 	cfg.FastMode = true
 	spider := crawler.NewSpider(cfg)
 	spider.ProofDir = proofDir
@@ -253,10 +252,10 @@ func executeBaseline(cfg *config.AppConfig, projectName string) {
 func executeCompare(cfg *config.AppConfig, projectName string, baselinePath string) {
 	timestamp := time.Now().Format("20060102_150405")
 	proofDir := fmt.Sprintf("./proofs/%s/%s_compare", projectName, timestamp)
-	
+
 	runID, _ := db.CreateRun(projectName, "compare", cfg.Target, proofDir)
 	log.Printf("[UI] Starting Compare on %s (Project: %s) ...", cfg.Target, projectName)
-	
+
 	cfg.FastMode = true
 	spider := crawler.NewSpider(cfg)
 	spider.ProofDir = proofDir
@@ -286,10 +285,10 @@ func executeCompare(cfg *config.AppConfig, projectName string, baselinePath stri
 func executeA11y(cfg *config.AppConfig, projectName string) {
 	timestamp := time.Now().Format("20060102_150405")
 	proofDir := fmt.Sprintf("./proofs/%s/%s_a11y", projectName, timestamp)
-	
+
 	runID, _ := db.CreateRun(projectName, "a11y", cfg.Target, proofDir)
 	log.Printf("[UI] Starting A11y Audit on %s (Project: %s) ...", cfg.Target, projectName)
-	
+
 	os.MkdirAll(proofDir, 0755)
 	reportFile := filepath.Join(proofDir, "accessibility_audit_report.md")
 	if err := a11y.InitializeReport(reportFile); err != nil {
@@ -297,7 +296,7 @@ func executeA11y(cfg *config.AppConfig, projectName string) {
 		db.UpdateRunStatus(runID, "failed")
 		return
 	}
-	
+
 	cfg.FastMode = true
 	spider := crawler.NewSpider(cfg)
 	spider.ProofDir = proofDir
@@ -315,10 +314,10 @@ func executeA11y(cfg *config.AppConfig, projectName string) {
 func executeLoad(cfg *config.AppConfig, projectName string, users int, duration string, method string, bodyJSON string) {
 	timestamp := time.Now().Format("20060102_150405")
 	proofDir := fmt.Sprintf("./proofs/%s/%s_load", projectName, timestamp)
-	
+
 	runID, _ := db.CreateRun(projectName, "load", cfg.Target, proofDir)
 	log.Printf("[UI] Starting Load Test on %s (Project: %s) with %d users...", cfg.Target, projectName, users)
-	
+
 	if users <= 0 {
 		users = 50
 	}
@@ -341,7 +340,6 @@ func executeLoad(cfg *config.AppConfig, projectName string, users int, duration 
 		db.UpdateRunStatus(runID, "completed")
 	}
 }
-
 
 func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")

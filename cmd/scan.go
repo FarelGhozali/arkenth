@@ -1,16 +1,16 @@
 package cmd
 
 import (
-	"log"
 	"github.com/FarelGhozali/web-qa-automation/crawler"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
 var scanCmd = &cobra.Command{
-	Use:      "scan",
-	Short:    "Start the automated QA scanning and fuzzing sequence",
-	PreRunE:  RequireTarget,
+	Use:     "scan",
+	Short:   "Start the automated QA scanning and fuzzing sequence",
+	PreRunE: RequireTarget,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Println("Starting Enterprise Web QA Scan...")
 

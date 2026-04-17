@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,7 +24,7 @@ type TestRun struct {
 // Init initializes the SQLite database and creates the runs table if it doesn't exist.
 func Init() {
 	dbPath := "./proofs/qa_automation.db"
-	
+
 	// Ensure proofs dir exists
 	dir := filepath.Dir(dbPath)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
