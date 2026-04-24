@@ -31,6 +31,10 @@
   let method = $state('GET');
   let bodyJson = $state('');
   
+  // Fuzz-API-specific
+  let swaggerUrl = $state('');
+  let fuzzConcurrency = $state(10);
+  
   // Job status
   let jobStatus = $state('idle'); // idle | running | success | error
   let jobMessage = $state('');
@@ -54,6 +58,7 @@
     { id: 'compare', label: 'Compare', icon: '🔬', desc: 'Visual Regression' },
     { id: 'a11y', label: 'A11y', icon: '♿', desc: 'Accessibility Audit' },
     { id: 'load', label: 'Load Test', icon: '🚀', desc: 'Stress Testing' },
+    { id: 'fuzz-api', label: 'API Fuzzer', icon: '🔒', desc: 'Swagger Fuzzing' },
     { id: 'history', label: 'History', icon: '📂', desc: 'Results Explorer' },
   ];
   
@@ -98,6 +103,10 @@
       payload.duration = duration;
       payload.method = method;
       payload.body_json = bodyJson;
+    }
+    if (command === 'fuzz-api') {
+      payload.swagger_url = swaggerUrl;
+      payload.concurrency = fuzzConcurrency;
     }
     
     try {
@@ -247,7 +256,7 @@
     <!-- PAGE CONTENT -->
     <div class="flex-1 overflow-y-auto p-8">
       
-      {#if currentPage !== 'history'}
+      {#if currentPage !== 'history' && currentPage !== 'fuzz-api'}
       <!-- SHARED CONFIG CARD (Global) -->
       <div class="card bg-base-200 shadow-xl border border-base-content/5 mb-6 animate-fade-in">
         <div class="card-body">
@@ -619,6 +628,127 @@
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
                 ⚡ Start Load Test
+              </button>
+            </div>
+          </div>
+        </div>
+
+      <!-- API FUZZER PAGE -->
+      {:else if currentPage === 'fuzz-api'}
+        <div class="card bg-base-200 shadow-xl border border-base-content/5 animate-fade-in">
+          <div class="card-body">
+            <h3 class="card-title text-base-content">
+              🔒 Swagger/OpenAPI Smart Fuzzer
+            </h3>
+            <p class="text-sm text-base-content/60 mb-4">
+              Provide a Swagger/OpenAPI spec URL or file path. The engine will automatically parse all endpoints,
+              generate type-aware payloads (SQLi, XSS, boundary, type confusion), and fire them concurrently.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Project Name -->
+              <div class="form-control">
+                <label class="label" for="input-fuzz-project">
+                  <span class="label-text font-semibold">📁 Project Name</span>
+                </label>
+                <input
+                  id="input-fuzz-project"
+                  type="text"
+                  placeholder="default"
+                  class="input input-bordered input-primary w-full"
+                  bind:value={projectName}
+                />
+              </div>
+
+              <!-- Target API Base URL -->
+              <div class="form-control">
+                <label class="label" for="input-fuzz-target">
+                  <span class="label-text font-semibold">🎯 API Base URL <span class="text-error">*</span></span>
+                </label>
+                <input
+                  id="input-fuzz-target"
+                  type="url"
+                  placeholder="https://api.example.com"
+                  class="input input-bordered input-primary w-full font-mono text-sm"
+                  bind:value={target}
+                />
+              </div>
+              
+              <!-- Swagger URL -->
+              <div class="form-control md:col-span-2">
+                <label class="label" for="input-swagger-url">
+                  <span class="label-text font-semibold">📄 Swagger/OpenAPI Spec URL <span class="text-error">*</span></span>
+                </label>
+                <input
+                  id="input-swagger-url"
+                  type="text"
+                  placeholder="https://api.example.com/swagger.json or ./openapi.yaml"
+                  class="input input-bordered input-accent w-full font-mono text-sm focus:glow-primary"
+                  bind:value={swaggerUrl}
+                />
+                <label class="label">
+                  <span class="label-text-alt text-base-content/40 text-xs">Supports Swagger 2.0, OpenAPI 3.x (JSON or YAML)</span>
+                </label>
+              </div>
+              
+              <!-- Concurrency -->
+              <div class="form-control">
+                <label class="label" for="input-fuzz-concurrency">
+                  <span class="label-text font-semibold">⚡ Concurrency</span>
+                  <span class="label-text-alt badge badge-primary badge-sm">{fuzzConcurrency} workers</span>
+                </label>
+                <input
+                  id="input-fuzz-concurrency"
+                  type="range"
+                  min="1" max="50"
+                  class="range range-primary range-sm"
+                  bind:value={fuzzConcurrency}
+                />
+                <div class="flex justify-between px-1 mt-1">
+                  <span class="text-[10px] text-base-content/40">1</span>
+                  <span class="text-[10px] text-base-content/40">25</span>
+                  <span class="text-[10px] text-base-content/40">50</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-3 mt-4">
+              <div class="stats stats-horizontal bg-base-300 shadow border border-base-content/5">
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Engine</div>
+                  <div class="stat-value text-sm text-primary">kin-openapi</div>
+                </div>
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Payloads</div>
+                  <div class="stat-value text-sm text-warning">Smart Gen</div>
+                </div>
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Vectors</div>
+                  <div class="stat-value text-sm text-error">SQLi/XSS/RCE</div>
+                </div>
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Execution</div>
+                  <div class="stat-value text-sm text-success">Concurrent</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="alert alert-warning shadow-lg mt-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              <span class="text-sm">This tool sends security payloads. Only use on APIs you have permission to test!</span>
+            </div>
+
+            <div class="card-actions justify-end mt-6">
+              <button
+                id="btn-fuzz-api"
+                class="btn btn-error btn-wide gap-2 shadow-lg hover:glow-error"
+                onclick={() => executeJob('fuzz-api')}
+                disabled={jobStatus === 'running' || !swaggerUrl || !target}
+              >
+                {#if jobStatus === 'running' && currentPage === 'fuzz-api'}
+                  <span class="loading loading-spinner loading-sm"></span>
+                {/if}
+                🔒 Start API Fuzzing
               </button>
             </div>
           </div>
