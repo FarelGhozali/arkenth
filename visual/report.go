@@ -5,11 +5,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/FarelGhozali/web-qa-automation/models"
 )
 
 // GenerateRegressionReport scans the baseline and current directories for matching images,
 // runs the differ algorithm, and generates the markdown report.
 func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile string) error {
+	return GenerateSmartRegressionReport(baselineDir, currentDir, diffDir, reportFile, nil, DefaultThreshold)
+}
+
+// GenerateSmartRegressionReport scans the baseline and current directories for matching images,
+// runs the smart differ algorithm with masks and threshold, and generates the markdown report.
+func GenerateSmartRegressionReport(baselineDir, currentDir, diffDir, reportFile string, masks []models.VisualMask, threshold float64) error {
 	os.MkdirAll(diffDir, 0755)
 
 	f, err := os.Create(reportFile)
@@ -18,7 +26,9 @@ func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile strin
 	}
 	defer f.Close()
 
-	f.WriteString("# 👁️ Pixel-Perfect Visual Regression Report\n\n")
+	f.WriteString("# 🧠 Smart Visual Regression Report\n\n")
+	f.WriteString(fmt.Sprintf("> **Threshold:** %.1f (Euclidean color distance)  \n", threshold))
+	f.WriteString(fmt.Sprintf("> **Active Masks:** %d ignore region(s)  \n\n", len(masks)))
 
 	files, err := os.ReadDir(baselineDir)
 	if err != nil {
@@ -40,7 +50,7 @@ func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile strin
 			continue
 		}
 
-		diffPerc, err := CompareImages(baselineImg, currentImg, diffImg)
+		diffPerc, err := SmartCompareImages(baselineImg, currentImg, diffImg, masks, threshold)
 		if err != nil {
 			f.WriteString(fmt.Sprintf("## ⚠️ Error comparing `%s`: %v\n\n", file.Name(), err))
 			continue
@@ -60,7 +70,8 @@ func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile strin
 			// Simple layout to show baseline -> current -> diff horizontally if possible
 			// Markdown tables work best for image side-by-sides
 			f.WriteString("| Baseline | Current | Visual Diff (Red = Changed) |\n")
-			f.WriteString("|----------|---------|-----------------------------|\n")
+			f.WriteString("|----------|---------|-----------------------------|")
+			f.WriteString("\n")
 
 			// Resolve relative paths for md
 			relBase, _ := filepath.Rel(".", baselineImg)
