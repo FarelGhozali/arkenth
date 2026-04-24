@@ -39,3 +39,17 @@ type Bug struct {
 	Actual      string `json:"actual"`
 	ProofPath   string `json:"proof_path,omitempty"` // Local path to screenshot/video
 }
+
+// VisualMask defines an ignore-region for Smart Visual Regression.
+// When comparing screenshots, masked areas are filled with a solid color
+// before diffing so that dynamic content (ads, timestamps, chat widgets)
+// does not trigger false-positive regressions.
+type VisualMask struct {
+	ID        int    `json:"id"`
+	TargetURL string `json:"target_url"` // URL of the page this mask applies to
+	X         int    `json:"x"`
+	Y         int    `json:"y"`
+	Width     int    `json:"width"`
+	Height    int    `json:"height"`
+	Label     string `json:"label"` // Human-readable label, e.g. "Ad Banner"
+}
