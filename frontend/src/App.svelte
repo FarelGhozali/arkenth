@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import MaskingCanvas from './lib/MaskingCanvas.svelte';
   
   onMount(() => {
     if (window.runtime && window.runtime.EventsOn) {
@@ -24,6 +25,7 @@
   
   // Compare-specific
   let baselineDate = $state('');
+  let threshold = $state(12);
   
   // Load-test-specific
   let users = $state(50);
@@ -44,6 +46,14 @@
   let gallery = $state({ images: [], reports: [] });
   let loadingHistory = $state(false);
   
+  // Masking State
+  let maskBaselines = $state([]);
+  let maskSelectedBaseline = $state(null);
+  let maskSelectedImage = $state('');
+  let maskTargetUrl = $state('');
+  let currentMasks = $state([]);
+  let loadingMasks = $state(false);
+  
   // API base URL — same origin when embedded in Go
   const API_BASE = '/api';
   
@@ -51,7 +61,8 @@
   const navItems = [
     { id: 'scan', label: 'Scan', icon: '🔍', desc: 'Security Fuzzing' },
     { id: 'baseline', label: 'Baseline', icon: '📸', desc: 'Visual Snapshot' },
-    { id: 'compare', label: 'Compare', icon: '🔬', desc: 'Visual Regression' },
+    { id: 'compare', label: 'Compare', icon: '🔬', desc: 'Smart Regression' },
+    { id: 'masking', label: 'Masking', icon: '🎭', desc: 'Ignore Regions' },
     { id: 'a11y', label: 'A11y', icon: '♿', desc: 'Accessibility Audit' },
     { id: 'load', label: 'Load Test', icon: '🚀', desc: 'Stress Testing' },
     { id: 'history', label: 'History', icon: '📂', desc: 'Results Explorer' },
@@ -92,6 +103,7 @@
     // Add command-specific fields
     if (command === 'compare') {
       payload.baseline_date = baselineDate;
+      payload.threshold = threshold;
     }
     if (command === 'load') {
       payload.users = users;
@@ -158,9 +170,68 @@
     } catch (err) { console.error(err); }
   }
 
+  // --- Masking Functions ---
+  async function loadMaskBaselines() {
+    if (!projectName) return;
+    try {
+      const res = await fetch(`${API_BASE}/visual/baselines?project=${encodeURIComponent(projectName)}`);
+      if (res.ok) maskBaselines = await res.json();
+    } catch (err) { console.error(err); }
+  }
+
+  async function loadMasks() {
+    if (!maskTargetUrl) return;
+    loadingMasks = true;
+    try {
+      const res = await fetch(`${API_BASE}/visual/masks?target_url=${encodeURIComponent(maskTargetUrl)}`);
+      if (res.ok) currentMasks = await res.json();
+    } catch (err) { console.error(err); }
+    loadingMasks = false;
+  }
+
+  async function createMask(maskData) {
+    try {
+      const res = await fetch(`${API_BASE}/visual/masks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(maskData),
+      });
+      if (res.ok) {
+        await loadMasks();
+      }
+    } catch (err) { console.error(err); }
+  }
+
+  async function deleteMask(maskId) {
+    try {
+      const res = await fetch(`${API_BASE}/visual/masks/delete?id=${maskId}`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        await loadMasks();
+      }
+    } catch (err) { console.error(err); }
+  }
+
+  function selectBaselineForMasking(baseline, imgName) {
+    maskSelectedBaseline = baseline;
+    maskSelectedImage = imgName;
+    // Derive target URL from baseline name or use a manual input
+    if (!maskTargetUrl) {
+      maskTargetUrl = target || 'https://example.com';
+    }
+    loadMasks();
+  }
+
   $effect(() => {
     if (currentPage === 'history') {
       loadProjects();
+    }
+  });
+
+  $effect(() => {
+    if (currentPage === 'masking') {
+      loadMaskBaselines();
     }
   });
 </script>
@@ -432,27 +503,65 @@
         <div class="card bg-base-200 shadow-xl border border-base-content/5 animate-fade-in">
           <div class="card-body">
             <h3 class="card-title text-base-content">
-              🔬 Visual Regression Compare
+              🧠 Smart Visual Regression Compare
             </h3>
             <p class="text-sm text-base-content/60 mb-4">
-              Compare the current website appearance with a previous baseline. 
-              Changed areas will be highlighted in bright red in an "X-ray" image.
+              Compare the current website with a baseline using <strong>tolerance-aware pixel diffing</strong> and <strong>ignore-region masking</strong>.
+              Anti-aliasing and sub-pixel rendering differences are automatically suppressed.
             </p>
             
-            <div class="form-control max-w-sm">
-              <label class="label" for="input-baseline-date">
-                <span class="label-text font-semibold">📅 Comparison Baseline Folder Path</span>
-              </label>
-              <input
-                id="input-baseline-date"
-                type="text"
-                placeholder="proofs/my-project/2026-01-01_12-00-00_baseline"
-                class="input input-bordered input-sm w-full font-mono"
-                bind:value={baselineDate}
-              />
-              <label class="label">
-                <span class="label-text-alt text-base-content/40 text-xs">Use "History Explorer" to find your baseline path.</span>
-              </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-control">
+                <label class="label" for="input-baseline-date">
+                  <span class="label-text font-semibold">📅 Baseline Folder Path</span>
+                </label>
+                <input
+                  id="input-baseline-date"
+                  type="text"
+                  placeholder="proofs/my-project/2026-01-01_12-00-00_baseline"
+                  class="input input-bordered input-sm w-full font-mono"
+                  bind:value={baselineDate}
+                />
+                <label class="label">
+                  <span class="label-text-alt text-base-content/40 text-xs">Use "History Explorer" to find your baseline path.</span>
+                </label>
+              </div>
+
+              <div class="form-control">
+                <label class="label" for="input-threshold">
+                  <span class="label-text font-semibold">🎚️ Color Tolerance (Threshold)</span>
+                  <span class="label-text-alt badge badge-primary badge-sm">{threshold}</span>
+                </label>
+                <input
+                  id="input-threshold"
+                  type="range"
+                  min="0" max="50" step="1"
+                  class="range range-secondary range-sm"
+                  bind:value={threshold}
+                />
+                <div class="flex justify-between px-1 mt-1">
+                  <span class="text-[10px] text-base-content/40">0 (Exact)</span>
+                  <span class="text-[10px] text-base-content/40">12 (Default)</span>
+                  <span class="text-[10px] text-base-content/40">50 (Loose)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3 mt-4">
+              <div class="stats stats-horizontal bg-base-300 shadow border border-base-content/5">
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Engine</div>
+                  <div class="stat-value text-sm text-secondary">Smart Differ</div>
+                </div>
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Tolerance</div>
+                  <div class="stat-value text-sm text-warning">{threshold > 0 ? 'Active' : 'Off'}</div>
+                </div>
+                <div class="stat px-4 py-3">
+                  <div class="stat-title text-xs">Masking</div>
+                  <div class="stat-value text-sm text-success">Enabled</div>
+                </div>
+              </div>
             </div>
 
             <div class="card-actions justify-end mt-6">
@@ -465,9 +574,133 @@
                 {#if jobStatus === 'running' && currentPage === 'compare'}
                   <span class="loading loading-spinner loading-sm"></span>
                 {/if}
-                🔬 Start Comparison
+                🧠 Start Smart Comparison
               </button>
             </div>
+          </div>
+        </div>
+
+      <!-- MASKING PAGE -->
+      {:else if currentPage === 'masking'}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+          <!-- Left Panel: Baseline selector & mask list -->
+          <div class="lg:col-span-1 space-y-4">
+            <!-- Target URL for Masks -->
+            <div class="card bg-base-200 shadow border border-base-content/5">
+              <div class="card-body p-4">
+                <h3 class="font-bold text-sm mb-2 uppercase tracking-wider text-base-content/50">Target URL</h3>
+                <input
+                  id="mask-target-url"
+                  type="text"
+                  placeholder="https://example.com"
+                  class="input input-bordered input-sm w-full font-mono text-xs"
+                  bind:value={maskTargetUrl}
+                  onchange={loadMasks}
+                />
+                <p class="text-[10px] text-base-content/40 mt-1">Masks are tied to a specific URL. Set this to match the page you're testing.</p>
+              </div>
+            </div>
+
+            <!-- Baseline Selector -->
+            <div class="card bg-base-200 shadow border border-base-content/5">
+              <div class="card-body p-4">
+                <h3 class="font-bold text-sm mb-2 uppercase tracking-wider text-base-content/50">
+                  📸 Baseline Images
+                </h3>
+                <p class="text-[10px] text-base-content/40 mb-2">Project: <strong>{projectName}</strong></p>
+                {#if maskBaselines.length === 0}
+                  <div class="text-xs opacity-50 p-2 text-center">
+                    No baselines found. Run a "Baseline" scan first.
+                  </div>
+                {:else}
+                  <div class="space-y-2 max-h-[300px] overflow-y-auto">
+                    {#each maskBaselines as bl}
+                      <div class="collapse collapse-arrow bg-base-300 rounded-lg">
+                        <input type="checkbox" />
+                        <div class="collapse-title text-xs font-semibold py-2 min-h-0">
+                          📁 {bl.name}
+                        </div>
+                        <div class="collapse-content p-0">
+                          <div class="space-y-1 p-2">
+                            {#each bl.images as img}
+                              <button
+                                class="btn btn-xs btn-ghost w-full justify-start text-[11px] truncate
+                                  {maskSelectedImage === img && maskSelectedBaseline?.name === bl.name ? 'btn-active' : ''}"
+                                onclick={() => selectBaselineForMasking(bl, img)}
+                              >
+                                🖼️ {img}
+                              </button>
+                            {:else}
+                              <span class="text-[10px] opacity-40 p-2">No images</span>
+                            {/each}
+                          </div>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            </div>
+
+            <!-- Active Masks List -->
+            <div class="card bg-base-200 shadow border border-base-content/5">
+              <div class="card-body p-4">
+                <h3 class="font-bold text-sm mb-2 uppercase tracking-wider text-base-content/50">
+                  🎭 Active Masks ({currentMasks.length})
+                </h3>
+                {#if loadingMasks}
+                  <div class="flex justify-center p-4"><span class="loading loading-spinner loading-sm"></span></div>
+                {:else if currentMasks.length === 0}
+                  <div class="text-xs opacity-50 p-2 text-center">No masks defined yet. Draw on the image to create one.</div>
+                {:else}
+                  <div class="space-y-2 max-h-[200px] overflow-y-auto">
+                    {#each currentMasks as mask}
+                      <div class="flex items-center justify-between bg-base-300 rounded-lg px-3 py-2">
+                        <div>
+                          <div class="text-xs font-semibold">{mask.label}</div>
+                          <div class="text-[10px] opacity-40 font-mono">{mask.width}×{mask.height} @ ({mask.x},{mask.y})</div>
+                        </div>
+                        <button
+                          class="btn btn-xs btn-ghost text-error"
+                          onclick={() => deleteMask(mask.id)}
+                        >✕</button>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Panel: Canvas -->
+          <div class="lg:col-span-2">
+            {#if maskSelectedBaseline && maskSelectedImage}
+              <div class="card bg-base-200 shadow border border-base-content/5">
+                <div class="card-body p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-lg">
+                      🎨 Mask Editor
+                    </h3>
+                    <div class="badge badge-outline badge-sm font-mono">{maskSelectedImage}</div>
+                  </div>
+                  <MaskingCanvas
+                    src="/{maskSelectedBaseline.path}/{maskSelectedImage}"
+                    targetUrl={maskTargetUrl}
+                    existingMasks={currentMasks}
+                    onMaskCreated={createMask}
+                    onMaskDeleted={deleteMask}
+                  />
+                </div>
+              </div>
+            {:else}
+              <div class="card bg-base-200 shadow border border-base-content/5">
+                <div class="card-body items-center justify-center p-20 text-center opacity-30">
+                  <div class="text-6xl mb-4">🎭</div>
+                  <div class="font-bold text-xl">Select a Baseline Image</div>
+                  <p class="text-sm">Choose an image from the left panel to start drawing ignore regions.</p>
+                </div>
+              </div>
+            {/if}
           </div>
         </div>
         
