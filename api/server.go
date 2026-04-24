@@ -15,6 +15,7 @@ import (
 	"github.com/FarelGhozali/web-qa-automation/crawler"
 	"github.com/FarelGhozali/web-qa-automation/db"
 	"github.com/FarelGhozali/web-qa-automation/loadtester"
+	"github.com/FarelGhozali/web-qa-automation/swagger"
 	"github.com/FarelGhozali/web-qa-automation/visual"
 )
 
@@ -37,6 +38,10 @@ type RunRequest struct {
 	Duration string `json:"duration"`
 	Method   string `json:"method"`
 	BodyJSON string `json:"body_json"`
+
+	// Fuzz-API-specific
+	SwaggerURL  string `json:"swagger_url"`
+	Concurrency int    `json:"concurrency"`
 }
 
 // RunResponse is the JSON reply the frontend receives
@@ -138,6 +143,14 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 	case "load":
 		go executeLoad(cfg, req.ProjectName, req.Users, req.Duration, req.Method, req.BodyJSON)
 		writeJSON(w, http.StatusOK, RunResponse{Message: fmt.Sprintf("Load Test dimulai! %d users → %s", req.Users, req.Target)})
+
+	case "fuzz-api":
+		if req.SwaggerURL == "" {
+			writeJSON(w, http.StatusBadRequest, RunResponse{Error: "Swagger/OpenAPI URL is required"})
+			return
+		}
+		go executeFuzzAPI(req.ProjectName, req.Target, req.SwaggerURL, req.Concurrency)
+		writeJSON(w, http.StatusOK, RunResponse{Message: fmt.Sprintf("API Fuzzing started! Spec: %s → %s", req.SwaggerURL, req.Target)})
 
 	default:
 		writeJSON(w, http.StatusBadRequest, RunResponse{Error: "Unknown command: " + req.Command})
@@ -337,6 +350,44 @@ func executeLoad(cfg *config.AppConfig, projectName string, users int, duration 
 		db.UpdateRunStatus(runID, "failed")
 	} else {
 		log.Println("✅ Load Test completed.")
+		db.UpdateRunStatus(runID, "completed")
+	}
+}
+
+func executeFuzzAPI(projectName string, targetBaseURL string, swaggerURL string, concurrencyLevel int) {
+	timestamp := time.Now().Format("20060102_150405")
+	proofDir := fmt.Sprintf("./proofs/%s/%s_fuzz_api", projectName, timestamp)
+
+	runID, _ := db.CreateRun(projectName, "fuzz-api", targetBaseURL, proofDir)
+	log.Printf("[UI] Starting API Fuzzing on %s using spec %s (Project: %s) ...", targetBaseURL, swaggerURL, projectName)
+
+	parser := swagger.NewParser()
+	if err := parser.LoadSpec(swaggerURL); err != nil {
+		log.Printf("[UI] Failed to load Swagger spec: %v", err)
+		db.UpdateRunStatus(runID, "failed")
+		return
+	}
+
+	endpoints, err := parser.ExtractEndpoints()
+	if err != nil {
+		log.Printf("[UI] Failed to extract endpoints: %v", err)
+		db.UpdateRunStatus(runID, "failed")
+		return
+	}
+
+	if concurrencyLevel <= 0 {
+		concurrencyLevel = 10
+	}
+
+	fuzzer := swagger.NewFuzzer(targetBaseURL, endpoints, concurrencyLevel)
+	fuzzer.Report.SpecURL = swaggerURL
+	report := fuzzer.Run()
+
+	if err := swagger.GenerateReport(report, proofDir); err != nil {
+		log.Printf("[UI] API Fuzz report error: %v", err)
+		db.UpdateRunStatus(runID, "failed")
+	} else {
+		log.Printf("✅ API Fuzzing completed. %d anomalies found.", report.TotalAnomalies)
 		db.UpdateRunStatus(runID, "completed")
 	}
 }
