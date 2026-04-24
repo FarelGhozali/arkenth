@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/FarelGhozali/web-qa-automation/crawler"
 	"github.com/FarelGhozali/web-qa-automation/db"
 	"github.com/FarelGhozali/web-qa-automation/loadtester"
+	"github.com/FarelGhozali/web-qa-automation/models"
 	"github.com/FarelGhozali/web-qa-automation/visual"
 )
 
@@ -30,7 +32,8 @@ type RunRequest struct {
 	AuthJSON        string `json:"auth_json"`
 
 	// Compare-specific
-	BaselineDate string `json:"baseline_date"`
+	BaselineDate string  `json:"baseline_date"`
+	Threshold    float64 `json:"threshold"` // Euclidean color distance tolerance (0 = exact match)
 
 	// Load-specific
 	Users    int    `json:"users"`
@@ -59,6 +62,11 @@ func SetupRouter(staticFS http.Handler) *http.ServeMux {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
+
+	// Smart Visual Regression endpoints
+	mux.HandleFunc("/api/visual/baselines", handleVisualBaselines)
+	mux.HandleFunc("/api/visual/masks", handleVisualMasks)
+	mux.HandleFunc("/api/visual/masks/delete", handleDeleteVisualMask)
 
 	// Serve proofs folder for history gallery
 	mux.Handle("/proofs/", http.StripPrefix("/proofs/", http.FileServer(http.Dir("./proofs"))))
@@ -128,7 +136,7 @@ func handleRun(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, RunResponse{Message: "Baseline dimulai! Mengambil snapshot dari " + req.Target})
 
 	case "compare":
-		go executeCompare(cfg, req.ProjectName, req.BaselineDate)
+		go executeCompare(cfg, req.ProjectName, req.BaselineDate, req.Threshold)
 		writeJSON(w, http.StatusOK, RunResponse{Message: "Compare dimulai! Membandingkan visual " + req.Target})
 
 	case "a11y":
@@ -249,12 +257,12 @@ func executeBaseline(cfg *config.AppConfig, projectName string) {
 	}
 }
 
-func executeCompare(cfg *config.AppConfig, projectName string, baselinePath string) {
+func executeCompare(cfg *config.AppConfig, projectName string, baselinePath string, threshold float64) {
 	timestamp := time.Now().Format("20060102_150405")
 	proofDir := fmt.Sprintf("./proofs/%s/%s_compare", projectName, timestamp)
 
 	runID, _ := db.CreateRun(projectName, "compare", cfg.Target, proofDir)
-	log.Printf("[UI] Starting Compare on %s (Project: %s) ...", cfg.Target, projectName)
+	log.Printf("[UI] Starting Smart Compare on %s (Project: %s, Threshold: %.1f) ...", cfg.Target, projectName, threshold)
 
 	cfg.FastMode = true
 	spider := crawler.NewSpider(cfg)
@@ -272,12 +280,25 @@ func executeCompare(cfg *config.AppConfig, projectName string, baselinePath stri
 		baselineDir = filepath.Join("proofs", projectName, baselinePath)
 	}
 
+	// Set threshold default if not specified
+	if threshold <= 0 {
+		threshold = visual.DefaultThreshold
+	}
+
+	// Fetch masks from database for the target URL
+	masks, err := db.GetVisualMasks(cfg.Target)
+	if err != nil {
+		log.Printf("[UI] Warning: Could not load visual masks: %v", err)
+		masks = nil
+	}
+
 	diffDir := filepath.Join(spider.ProofDir, "diff")
-	if err := visual.GenerateRegressionReport(baselineDir, spider.ProofDir, diffDir, "visual_regression_report.md"); err != nil {
+	reportPath := filepath.Join(spider.ProofDir, "visual_regression_report.md")
+	if err := visual.GenerateSmartRegressionReport(baselineDir, spider.ProofDir, diffDir, reportPath, masks, threshold); err != nil {
 		log.Printf("[UI] Visual diff error: %v", err)
 		db.UpdateRunStatus(runID, "failed")
 	} else {
-		log.Println("✅ Visual Regression compare completed.")
+		log.Printf("✅ Smart Visual Regression complete. Threshold=%.1f, Masks=%d", threshold, len(masks))
 		db.UpdateRunStatus(runID, "completed")
 	}
 }
@@ -345,4 +366,134 @@ func writeJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(payload)
+}
+
+// --- Smart Visual Regression Handlers ---
+
+// handleVisualBaselines returns a list of baseline proof directories for a project.
+func handleVisualBaselines(w http.ResponseWriter, r *http.Request) {
+	project := r.URL.Query().Get("project")
+	if project == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "project parameter is required"})
+		return
+	}
+
+	projectDir := filepath.Join("proofs", project)
+	entries, err := os.ReadDir(projectDir)
+	if err != nil {
+		writeJSON(w, http.StatusOK, []string{}) // No baselines yet
+		return
+	}
+
+	type BaselineInfo struct {
+		Name string   `json:"name"`
+		Path string   `json:"path"`
+		Images []string `json:"images"`
+	}
+
+	var baselines []BaselineInfo
+	for _, e := range entries {
+		if !e.IsDir() || !strings.Contains(e.Name(), "baseline") {
+			continue
+		}
+		// Enumerate images inside the baseline dir
+		imgDir := filepath.Join(projectDir, e.Name())
+		imgEntries, err := os.ReadDir(imgDir)
+		var images []string
+		if err == nil {
+			for _, img := range imgEntries {
+				if !img.IsDir() && strings.HasSuffix(strings.ToLower(img.Name()), ".png") {
+					images = append(images, img.Name())
+				}
+			}
+		}
+		baselines = append(baselines, BaselineInfo{
+			Name:   e.Name(),
+			Path:   imgDir,
+			Images: images,
+		})
+	}
+
+	if baselines == nil {
+		baselines = []BaselineInfo{}
+	}
+	writeJSON(w, http.StatusOK, baselines)
+}
+
+// handleVisualMasks handles GET (list) and POST (create) for visual masks.
+func handleVisualMasks(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		targetURL := r.URL.Query().Get("target_url")
+		if targetURL == "" {
+			// Return all masks if no target_url specified
+			masks, err := db.GetAllVisualMasks()
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			if masks == nil {
+				masks = []models.VisualMask{}
+			}
+			writeJSON(w, http.StatusOK, masks)
+			return
+		}
+
+		masks, err := db.GetVisualMasks(targetURL)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		if masks == nil {
+			masks = []models.VisualMask{}
+		}
+		writeJSON(w, http.StatusOK, masks)
+
+	case http.MethodPost:
+		var mask models.VisualMask
+		if err := json.NewDecoder(r.Body).Decode(&mask); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid JSON: " + err.Error()})
+			return
+		}
+		if mask.TargetURL == "" || mask.Width <= 0 || mask.Height <= 0 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "target_url, width, and height are required"})
+			return
+		}
+		id, err := db.CreateVisualMask(mask)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
+		mask.ID = int(id)
+		writeJSON(w, http.StatusCreated, mask)
+
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Only GET and POST are allowed"})
+	}
+}
+
+// handleDeleteVisualMask handles DELETE requests to remove a mask by ID.
+func handleDeleteVisualMask(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Only POST/DELETE are allowed"})
+		return
+	}
+
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id parameter is required"})
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return
+	}
+
+	if err := db.DeleteVisualMask(id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Mask deleted successfully"})
 }
