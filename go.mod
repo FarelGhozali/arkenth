@@ -1,4 +1,4 @@
-module github.com/FarelGhozali/web-qa-automation
+module github.com/FarelGhozali/arkenth
 
 go 1.25.6
 

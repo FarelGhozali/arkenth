@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FarelGhozali/web-qa-automation/a11y"
-	"github.com/FarelGhozali/web-qa-automation/config"
-	"github.com/FarelGhozali/web-qa-automation/interceptor"
-	"github.com/FarelGhozali/web-qa-automation/models"
-	"github.com/FarelGhozali/web-qa-automation/reporter"
+	"github.com/FarelGhozali/arkenth/a11y"
+	"github.com/FarelGhozali/arkenth/config"
+	"github.com/FarelGhozali/arkenth/interceptor"
+	"github.com/FarelGhozali/arkenth/models"
+	"github.com/FarelGhozali/arkenth/reporter"
 
 	"github.com/playwright-community/playwright-go"
 )

@@ -15,12 +15,12 @@ COPY . .
 # Copy the built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 # Build the main binary (without Wails desktop support, which requires CGO and GTK)
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/web-qa .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/arkenth .
 
 # Stage 3: Final image
 FROM mcr.microsoft.com/playwright:v1.57.0-noble
 WORKDIR /app
-COPY --from=builder /out/web-qa /app/web-qa
+COPY --from=builder /out/arkenth /app/arkenth
 RUN chown -R pwuser:pwuser /app
 USER pwuser
-ENTRYPOINT ["/app/web-qa"]
+ENTRYPOINT ["/app/arkenth"]

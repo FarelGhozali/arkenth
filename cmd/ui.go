@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/FarelGhozali/web-qa-automation/api"
+	"github.com/FarelGhozali/arkenth/api"
 
 	"github.com/spf13/cobra"
 )

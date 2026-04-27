@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/FarelGhozali/web-qa-automation/config"
+	"github.com/FarelGhozali/arkenth/config"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

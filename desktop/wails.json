@@ -1,6 +1,6 @@
 {
-  "name": "web-qa-desktop",
-  "outputfilename": "web-qa-desktop",
+  "name": "arkenth-desktop",
+  "outputfilename": "arkenth-desktop",
   "frontend:dir": "../frontend",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
@@ -11,7 +11,7 @@
   },
   "info": {
     "companyName": "FarelGhozali",
-    "productName": "Web QA Desktop",
+    "productName": "Arkenth Desktop",
     "productVersion": "1.0.0",
     "copyright": "Copyright 2026",
     "comments": "Automated Web QA Tool"
