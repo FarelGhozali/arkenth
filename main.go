@@ -5,8 +5,8 @@ import (
 	"io/fs"
 	"log"
 
-	"github.com/FarelGhozali/web-qa-automation/cmd"
-	"github.com/FarelGhozali/web-qa-automation/db"
+	"github.com/FarelGhozali/arkenth/cmd"
+	"github.com/FarelGhozali/arkenth/db"
 )
 
 //go:embed frontend/dist/*

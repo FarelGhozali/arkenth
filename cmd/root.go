@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/FarelGhozali/web-qa-automation/config"
+	"github.com/FarelGhozali/arkenth/config"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,7 +14,7 @@ import (
 var AppConfig *config.AppConfig
 
 var rootCmd = &cobra.Command{
-	Use:   "web-qa",
+	Use:   "arkenth",
 	Short: "Enterprise Automated Web QA Testing CLI",
 	Long: `A comprehensive web QA automation tool using Playwright-Go.
 It supports deep network interception, fuzzing, mobile emulation, and proof generation.`,

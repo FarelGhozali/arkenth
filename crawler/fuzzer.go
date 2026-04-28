@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/FarelGhozali/web-qa-automation/models"
+	"github.com/FarelGhozali/arkenth/models"
 
 	"github.com/playwright-community/playwright-go"
 )

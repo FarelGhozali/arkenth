@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/FarelGhozali/web-qa-automation/models"
 	_ "modernc.org/sqlite"
 )
 
@@ -65,6 +66,23 @@ func Init() {
 		log.Fatalf("❌ Failed to create table: %v", err)
 	}
 
+	// Create visual_masks table for Smart Visual Regression ignore-regions
+	createMasksQuery := `
+	CREATE TABLE IF NOT EXISTS visual_masks (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		target_url TEXT NOT NULL,
+		x INTEGER NOT NULL,
+		y INTEGER NOT NULL,
+		width INTEGER NOT NULL,
+		height INTEGER NOT NULL,
+		label TEXT NOT NULL DEFAULT ''
+	);`
+
+	_, err = DB.Exec(createMasksQuery)
+	if err != nil {
+		log.Fatalf("❌ Failed to create visual_masks table: %v", err)
+	}
+
 	log.Println("🗄️ Database initialized successfully.")
 }
 
@@ -122,4 +140,63 @@ func GetHistoryByProject(project string) ([]TestRun, error) {
 		}
 	}
 	return history, nil
+}
+
+// CreateVisualMask inserts a new ignore-region mask for smart visual regression.
+func CreateVisualMask(mask models.VisualMask) (int64, error) {
+	query := `INSERT INTO visual_masks (target_url, x, y, width, height, label)
+	          VALUES (?, ?, ?, ?, ?, ?)`
+	res, err := DB.Exec(query, mask.TargetURL, mask.X, mask.Y, mask.Width, mask.Height, mask.Label)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetVisualMasks retrieves all masks for a given target URL.
+func GetVisualMasks(targetURL string) ([]models.VisualMask, error) {
+	query := `SELECT id, target_url, x, y, width, height, label
+	          FROM visual_masks WHERE target_url = ? ORDER BY id ASC`
+	rows, err := DB.Query(query, targetURL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var masks []models.VisualMask
+	for rows.Next() {
+		var m models.VisualMask
+		err := rows.Scan(&m.ID, &m.TargetURL, &m.X, &m.Y, &m.Width, &m.Height, &m.Label)
+		if err == nil {
+			masks = append(masks, m)
+		}
+	}
+	return masks, nil
+}
+
+// GetAllVisualMasks retrieves every mask in the database.
+func GetAllVisualMasks() ([]models.VisualMask, error) {
+	query := `SELECT id, target_url, x, y, width, height, label
+	          FROM visual_masks ORDER BY target_url, id ASC`
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var masks []models.VisualMask
+	for rows.Next() {
+		var m models.VisualMask
+		err := rows.Scan(&m.ID, &m.TargetURL, &m.X, &m.Y, &m.Width, &m.Height, &m.Label)
+		if err == nil {
+			masks = append(masks, m)
+		}
+	}
+	return masks, nil
+}
+
+// DeleteVisualMask removes a single mask by its ID.
+func DeleteVisualMask(id int) error {
+	_, err := DB.Exec("DELETE FROM visual_masks WHERE id = ?", id)
+	return err
 }

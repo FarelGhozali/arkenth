@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/FarelGhozali/web-qa-automation/loadtester"
+	"github.com/FarelGhozali/arkenth/loadtester"
 	"log"
 	"time"
 

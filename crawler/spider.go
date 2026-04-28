@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FarelGhozali/web-qa-automation/a11y"
-	"github.com/FarelGhozali/web-qa-automation/config"
-	"github.com/FarelGhozali/web-qa-automation/interceptor"
-	"github.com/FarelGhozali/web-qa-automation/models"
-	"github.com/FarelGhozali/web-qa-automation/reporter"
+	"github.com/FarelGhozali/arkenth/a11y"
+	"github.com/FarelGhozali/arkenth/config"
+	"github.com/FarelGhozali/arkenth/interceptor"
+	"github.com/FarelGhozali/arkenth/models"
+	"github.com/FarelGhozali/arkenth/reporter"
 
 	"github.com/playwright-community/playwright-go"
 )
@@ -266,6 +266,28 @@ func extractInternalLinks(page playwright.Page, baseURL string) ([]string, error
 	return internalLinks, nil
 }
 
+func extractEndpointsFromJS(jsContent string, base *url.URL, apiRegex *regexp.Regexp) []string {
+	var endpoints []string
+	matches := apiRegex.FindAllStringSubmatch(jsContent, -1)
+	for _, match := range matches {
+		endpoint := match[1]
+		if endpoint == "" {
+			endpoint = match[2]
+		}
+
+		if endpoint != "" {
+			if !strings.HasPrefix(endpoint, "http") {
+				endpointURL, err := url.Parse(endpoint)
+				if err == nil {
+					endpoint = base.ResolveReference(endpointURL).String()
+				}
+			}
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	return endpoints
+}
+
 // scrapeJSForHiddenEndpoints downloads JS files and uses Regex to find hardcoded API routes
 func scrapeJSForHiddenEndpoints(page playwright.Page, baseURL string) ([]string, error) {
 	var hiddenEndpoints []string
@@ -309,25 +331,7 @@ func scrapeJSForHiddenEndpoints(page playwright.Page, baseURL string) ([]string,
 				}
 
 				if contentStr, ok := jsContent.(string); ok && contentStr != "" {
-					matches := apiRegex.FindAllStringSubmatch(contentStr, -1)
-					for _, match := range matches {
-						// match[1] corresponds to double quotes, match[2] to single quotes
-						endpoint := match[1]
-						if endpoint == "" {
-							endpoint = match[2]
-						}
-
-						if endpoint != "" {
-							// Check if it's already a full URL or just a path
-							if !strings.HasPrefix(endpoint, "http") {
-								endpointURL, err := url.Parse(endpoint)
-								if err == nil {
-									endpoint = base.ResolveReference(endpointURL).String()
-								}
-							}
-							hiddenEndpoints = append(hiddenEndpoints, endpoint)
-						}
-					}
+					hiddenEndpoints = append(hiddenEndpoints, extractEndpointsFromJS(contentStr, base, apiRegex)...)
 				}
 			}
 		}
