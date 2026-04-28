@@ -22,19 +22,49 @@ type LoadResult struct {
 	AvgLatency    time.Duration
 }
 
+func createRequest(method, targetURL, currentBody string) (*http.Request, error) {
+	var req *http.Request
+	var err error
+
+	if currentBody != "" {
+		req, err = http.NewRequest(method, targetURL, bytes.NewBuffer([]byte(currentBody)))
+		if req != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+	} else {
+		req, err = http.NewRequest(method, targetURL, nil)
+	}
+	return req, err
+}
+
+func executeWorkerRequest(client *http.Client, method, targetURL, currentBody string) (time.Duration, bool, bool) {
+	req, err := createRequest(method, targetURL, currentBody)
+	if err != nil {
+		return 0, false, false
+	}
+
+	reqStart := time.Now()
+	resp, err := client.Do(req)
+	latency := time.Since(reqStart)
+
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	isSuccess := err == nil && resp != nil && resp.StatusCode < 400
+	return latency, isSuccess, true
+}
+
 func RunLoadTest(targetURL string, users int, duration time.Duration, method string, bodyJson string) LoadResult {
 	var wg sync.WaitGroup
 	var totalReq, successReq, errReq int64
 
-	// Channels to communicate latency. Make it buffered to avoid blocking routines.
-	// Cap buffer at 1M to prevent OOM on extremely high user counts
 	bufferSize := users * 1000
 	if bufferSize > 1000000 {
 		bufferSize = 1000000
 	}
 	latencyCh := make(chan time.Duration, bufferSize)
 
-	// Stop channel
 	stopCh := make(chan struct{})
 	go func() {
 		time.Sleep(duration)
@@ -42,24 +72,19 @@ func RunLoadTest(targetURL string, users int, duration time.Duration, method str
 	}()
 
 	start := time.Now()
-
-	// Seed PRNG for mutations
 	rand.Seed(time.Now().UnixNano())
 
-	// Hardware-Bound Performance Tuning: Custom HTTP Transport
-	// Membuang batasan 'sopan' dari Go, mengizinkan koneksi tak terbatas untuk di-reuse
 	customTransport := &http.Transport{
-		MaxIdleConns:        0,         // 0 = Tanpa Batas global
-		MaxIdleConnsPerHost: users * 2, // Sediakan minimal koneksi idle sebanyak user + buffer
-		MaxConnsPerHost:     0,         // 0 = Tanpa Batas koneksi ke target
+		MaxIdleConns:        0,
+		MaxIdleConnsPerHost: users * 2,
+		MaxConnsPerHost:     0,
 		IdleConnTimeout:     30 * time.Second,
-		DisableKeepAlives:   false, // Wajib false agar koneksi TCP di-reuse (meminimalisir delay handshaking)
+		DisableKeepAlives:   false,
 	}
 
-	// Gunakan 1 HTTP Client global yang kuat untuk dipakai berbarengan oleh ribuan Goroutine
 	client := &http.Client{
 		Transport: customTransport,
-		Timeout:   10 * time.Second, // Timeout request wajar per user
+		Timeout:   10 * time.Second,
 	}
 
 	for i := 0; i < users; i++ {
@@ -71,47 +96,26 @@ func RunLoadTest(targetURL string, users int, duration time.Duration, method str
 				case <-stopCh:
 					return
 				default:
-					// Dynamic Mutation [Phase 2: Advanced Feature]
 					currentBody := bodyJson
 					if currentBody != "" && strings.Contains(currentBody, "{{RANDOM}}") {
 						randomVal := fmt.Sprintf("%d", rand.Intn(9999999))
 						currentBody = strings.ReplaceAll(currentBody, "{{RANDOM}}", randomVal)
 					}
 
-					var req *http.Request
-					var err error
-
-					if currentBody != "" {
-						req, err = http.NewRequest(method, targetURL, bytes.NewBuffer([]byte(currentBody)))
-						if req != nil {
-							req.Header.Set("Content-Type", "application/json")
-						}
-					} else {
-						req, err = http.NewRequest(method, targetURL, nil)
-					}
-
-					if err != nil {
+					latency, isSuccess, reqCreated := executeWorkerRequest(client, method, targetURL, currentBody)
+					if !reqCreated {
 						atomic.AddInt64(&errReq, 1)
 						continue
 					}
 
-					reqStart := time.Now()
-					resp, err := client.Do(req)
-					latency := time.Since(reqStart)
-
 					atomic.AddInt64(&totalReq, 1)
 
-					if err != nil || resp.StatusCode >= 400 {
+					if !isSuccess {
 						atomic.AddInt64(&errReq, 1)
 					} else {
 						atomic.AddInt64(&successReq, 1)
 					}
 
-					if resp != nil && resp.Body != nil {
-						resp.Body.Close()
-					}
-
-					// Safely send to channel without blocking if highly congested
 					select {
 					case latencyCh <- latency:
 					default:
