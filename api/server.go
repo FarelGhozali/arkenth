@@ -11,13 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FarelGhozali/web-qa-automation/a11y"
-	"github.com/FarelGhozali/web-qa-automation/config"
-	"github.com/FarelGhozali/web-qa-automation/crawler"
-	"github.com/FarelGhozali/web-qa-automation/db"
-	"github.com/FarelGhozali/web-qa-automation/loadtester"
-	"github.com/FarelGhozali/web-qa-automation/models"
-	"github.com/FarelGhozali/web-qa-automation/visual"
+	"github.com/FarelGhozali/arkenth/a11y"
+	"github.com/FarelGhozali/arkenth/config"
+	"github.com/FarelGhozali/arkenth/crawler"
+	"github.com/FarelGhozali/arkenth/db"
+	"github.com/FarelGhozali/arkenth/loadtester"
+	"github.com/FarelGhozali/arkenth/visual"
 )
 
 // RunRequest is the JSON payload the frontend sends

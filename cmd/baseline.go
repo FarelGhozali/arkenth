@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/FarelGhozali/web-qa-automation/crawler"
+	"github.com/FarelGhozali/arkenth/crawler"
 	"log"
 	"time"
 
