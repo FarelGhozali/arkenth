@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/FarelGhozali/web-qa-automation/models"
+	"github.com/FarelGhozali/arkenth/models"
 	_ "modernc.org/sqlite"
 )
 

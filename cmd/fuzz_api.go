@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/FarelGhozali/web-qa-automation/db"
-	"github.com/FarelGhozali/web-qa-automation/swagger"
+	"github.com/FarelGhozali/arkenth/db"
+	"github.com/FarelGhozali/arkenth/swagger"
 
 	"github.com/spf13/cobra"
 )

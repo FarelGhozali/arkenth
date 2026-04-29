@@ -9,7 +9,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/FarelGhozali/web-qa-automation/models"
+	"github.com/FarelGhozali/arkenth/models"
 )
 
 func loadImage(path string) (image.Image, error) {
@@ -36,6 +36,104 @@ func comparePixel(baseImg, currImg image.Image, x, y int, bBounds, cBounds image
 		}
 	}
 	return color.RGBA{R: 255, G: 0, B: 0, A: 255}, true
+}
+
+// DefaultThreshold is the default Euclidean color distance tolerance.
+// Differences below this value are considered identical, eliminating
+// false positives caused by sub-pixel rendering or anti-aliasing.
+const DefaultThreshold = 12.0
+
+// SmartCompareImages performs a tolerance-aware, mask-aware visual comparison.
+//   - masks: slice of VisualMask regions to ignore (filled with solid color before comparison).
+//   - threshold: Euclidean color distance below which two pixels are considered identical.
+//     Pass 0 for exact pixel matching (legacy behaviour).
+func SmartCompareImages(baselinePath, currentPath, diffOutputPath string, masks []models.VisualMask, threshold float64) (float64, error) {
+	// Open baseline image
+	baseImg, err := loadImage(baselinePath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open baseline: %v", err)
+	}
+
+	// Open current image
+	currImg, err := loadImage(currentPath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to open current: %v", err)
+	}
+
+	// Apply masks: draw solid black rectangles on both images in the masked areas
+	baseRGBA := toRGBA(baseImg)
+	currRGBA := toRGBA(currImg)
+	applyMasks(baseRGBA, masks)
+	applyMasks(currRGBA, masks)
+
+	// Determine matching bounds, diff image needs to be the size of the larger image
+	bBounds := baseRGBA.Bounds()
+	cBounds := currRGBA.Bounds()
+
+	maxWidth := bBounds.Max.X
+	if cBounds.Max.X > maxWidth {
+		maxWidth = cBounds.Max.X
+	}
+
+	maxHeight := bBounds.Max.Y
+	if cBounds.Max.Y > maxHeight {
+		maxHeight = cBounds.Max.Y
+	}
+
+	diffImg := image.NewRGBA(image.Rect(0, 0, maxWidth, maxHeight))
+
+	diffPixels := 0
+	totalPixels := maxWidth * maxHeight
+
+	// Pixel by pixel comparison with Euclidean color distance
+	for y := 0; y < maxHeight; y++ {
+		for x := 0; x < maxWidth; x++ {
+			inB := x < bBounds.Max.X && y < bBounds.Max.Y
+			inC := x < cBounds.Max.X && y < cBounds.Max.Y
+
+			if inB && inC {
+				// Both images have a pixel here
+				rB, gB, bB, _ := baseRGBA.At(x, y).RGBA()
+				rC, gC, bC, _ := currRGBA.At(x, y).RGBA()
+
+				// Scale from 16-bit to 8-bit for Euclidean distance
+				dist := colorDistance(
+					uint8(rB>>8), uint8(gB>>8), uint8(bB>>8),
+					uint8(rC>>8), uint8(gC>>8), uint8(bC>>8),
+				)
+
+				if dist <= threshold {
+					// Within tolerance — draw faint gray background
+					gray := uint8((rB + gB + bB) / (3 * 257))
+					gray = gray/2 + 128
+					diffImg.Set(x, y, color.RGBA{R: gray, G: gray, B: gray, A: 255})
+				} else {
+					// Mismatch: paint it bright Red
+					diffImg.Set(x, y, color.RGBA{R: 255, G: 0, B: 0, A: 255})
+					diffPixels++
+				}
+			} else {
+				// Dimensions differ, missing pixel in one of the images
+				diffImg.Set(x, y, color.RGBA{R: 255, G: 0, B: 0, A: 255})
+				diffPixels++
+			}
+		}
+	}
+
+	// Save diff image
+	diffFile, err := os.Create(diffOutputPath)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create diff output file: %v", err)
+	}
+	defer diffFile.Close()
+
+	if err := png.Encode(diffFile, diffImg); err != nil {
+		return 0, fmt.Errorf("failed to encode diff image: %v", err)
+	}
+
+	diffPercentage := float64(diffPixels) / float64(totalPixels) * 100.0
+	// Round to two decimal places
+	return math.Round(diffPercentage*100) / 100, nil
 }
 
 // CompareImages takes two image paths, compares them pixel-by-pixel, and generates a diff image.

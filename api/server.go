@@ -16,6 +16,8 @@ import (
 	"github.com/FarelGhozali/arkenth/crawler"
 	"github.com/FarelGhozali/arkenth/db"
 	"github.com/FarelGhozali/arkenth/loadtester"
+	"github.com/FarelGhozali/arkenth/models"
+	"github.com/FarelGhozali/arkenth/swagger"
 	"github.com/FarelGhozali/arkenth/visual"
 )
 
