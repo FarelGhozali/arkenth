@@ -201,7 +201,7 @@ func (f *Fuzzer) executeJob(job fuzzJob) {
 		return
 	}
 
-	req.Header.Set("User-Agent", "WebQA-SwaggerFuzzer/1.0")
+	req.Header.Set("User-Agent", "Arkenth-SwaggerFuzzer/1.0")
 
 	resp, err := f.Client.Do(req)
 	if err != nil {
