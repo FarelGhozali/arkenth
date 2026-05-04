@@ -18,7 +18,8 @@ func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile strin
 // GenerateSmartRegressionReport scans the baseline and current directories for matching images,
 // runs the smart differ algorithm with masks and threshold, and generates the markdown report.
 func GenerateSmartRegressionReport(baselineDir, currentDir, diffDir, reportFile string, masks []models.VisualMask, threshold float64) error {
-	os.MkdirAll(diffDir, 0755)
+	cleanDiffDir := filepath.Clean(diffDir)
+	os.MkdirAll(cleanDiffDir, 0755)
 
 	cleanReportFile := filepath.Clean(reportFile)
 	f, err := os.Create(cleanReportFile)
@@ -31,7 +32,8 @@ func GenerateSmartRegressionReport(baselineDir, currentDir, diffDir, reportFile 
 	f.WriteString(fmt.Sprintf("> **Threshold:** %.1f (Euclidean color distance)  \n", threshold))
 	f.WriteString(fmt.Sprintf("> **Active Masks:** %d ignore region(s)  \n\n", len(masks)))
 
-	files, err := os.ReadDir(baselineDir)
+	cleanBaselineDir := filepath.Clean(baselineDir)
+	files, err := os.ReadDir(cleanBaselineDir)
 	if err != nil {
 		return fmt.Errorf("baseline directory missing: %v", err)
 	}
