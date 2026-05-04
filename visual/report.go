@@ -20,7 +20,8 @@ func GenerateRegressionReport(baselineDir, currentDir, diffDir, reportFile strin
 func GenerateSmartRegressionReport(baselineDir, currentDir, diffDir, reportFile string, masks []models.VisualMask, threshold float64) error {
 	os.MkdirAll(diffDir, 0755)
 
-	f, err := os.Create(reportFile)
+	cleanReportFile := filepath.Clean(reportFile)
+	f, err := os.Create(cleanReportFile)
 	if err != nil {
 		return err
 	}
