@@ -554,5 +554,3 @@ func handleDeleteVisualMask(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Mask deleted successfully"})
 }
-uccessfully"})
-}
