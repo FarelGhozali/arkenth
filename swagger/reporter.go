@@ -12,26 +12,27 @@ import (
 // GenerateReport creates a comprehensive Markdown report and JSON data file
 // from the fuzzing results.
 func GenerateReport(report *FuzzReport, outputDir string) error {
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	cleanOutputDir := filepath.Clean(outputDir)
+	if err := os.MkdirAll(cleanOutputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// 1. Generate Markdown report
-	mdPath := filepath.Join(outputDir, "api_fuzz_report.md")
+	mdPath := filepath.Join(cleanOutputDir, "api_fuzz_report.md")
 	if err := generateMarkdownReport(report, mdPath); err != nil {
 		return fmt.Errorf("failed to generate markdown report: %w", err)
 	}
 
 	// 2. Export anomalies as JSON for programmatic analysis
 	if len(report.Anomalies) > 0 {
-		jsonPath := filepath.Join(outputDir, "api_fuzz_anomalies.json")
+		jsonPath := filepath.Join(cleanOutputDir, "api_fuzz_anomalies.json")
 		if err := exportJSON(report.Anomalies, jsonPath); err != nil {
 			return fmt.Errorf("failed to export anomalies JSON: %w", err)
 		}
 	}
 
 	// 3. Export full results as JSON
-	jsonPath := filepath.Join(outputDir, "api_fuzz_full_results.json")
+	jsonPath := filepath.Join(cleanOutputDir, "api_fuzz_full_results.json")
 	if err := exportJSON(report, jsonPath); err != nil {
 		return fmt.Errorf("failed to export full results JSON: %w", err)
 	}
@@ -40,7 +41,8 @@ func GenerateReport(report *FuzzReport, outputDir string) error {
 }
 
 func generateMarkdownReport(report *FuzzReport, path string) error {
-	f, err := os.Create(path)
+	cleanPath := filepath.Clean(path)
+	f, err := os.Create(cleanPath)
 	if err != nil {
 		return err
 	}
@@ -177,5 +179,6 @@ func exportJSON(data interface{}, path string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, jsonData, 0644)
+	cleanPath := filepath.Clean(path)
+	return os.WriteFile(cleanPath, jsonData, 0644)
 }
