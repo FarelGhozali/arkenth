@@ -429,7 +429,13 @@ func handleVisualBaselines(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectDir := filepath.Join("proofs", project)
+	safeProject := filepath.Base(project)
+	if safeProject == "." || safeProject == "/" || safeProject == "\\" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid project name"})
+		return
+	}
+
+	projectDir := filepath.Join("proofs", safeProject)
 	entries, err := os.ReadDir(projectDir)
 	if err != nil {
 		writeJSON(w, http.StatusOK, []string{}) // No baselines yet
@@ -547,4 +553,6 @@ func handleDeleteVisualMask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Mask deleted successfully"})
+}
+uccessfully"})
 }
