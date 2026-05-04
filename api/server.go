@@ -201,7 +201,13 @@ func handleGallery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files, err := os.ReadDir(dir)
+	cleanDir := filepath.Clean(dir)
+	if filepath.IsAbs(cleanDir) || strings.Contains(cleanDir, "..") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid directory path. Path traversal is not allowed."})
+		return
+	}
+
+	files, err := os.ReadDir(cleanDir)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
