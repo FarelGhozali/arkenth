@@ -43,33 +43,33 @@ func integerPayloads() []PayloadCategory {
 			Name:     "type_confusion",
 			Severity: "MEDIUM",
 			Payloads: []string{
-				"abc",                 // String instead of number
-				"true",               // Boolean instead of number
-				"null",               // Null value
-				"undefined",          // Undefined value
-				"[]",                 // Array instead of number
-				"{}",                 // Object instead of number
-				"1.1.1",              // Malformed decimal
-				"0x1A",               // Hex notation
-				"1e999",              // Scientific overflow
-				"NaN",               // Not a Number
-				"Infinity",          // Infinity value
+				"abc",       // String instead of number
+				"true",      // Boolean instead of number
+				"null",      // Null value
+				"undefined", // Undefined value
+				"[]",        // Array instead of number
+				"{}",        // Object instead of number
+				"1.1.1",     // Malformed decimal
+				"0x1A",      // Hex notation
+				"1e999",     // Scientific overflow
+				"NaN",       // Not a Number
+				"Infinity",  // Infinity value
 			},
 		},
 		{
 			Name:     "boundary",
 			Severity: "MEDIUM",
 			Payloads: []string{
-				"-1",                  // Negative
-				"0",                   // Zero
-				"-0",                  // Negative zero
-				"-9999999999",         // Large negative
-				"2147483647",          // Max Int32
-				"2147483648",          // Int32 overflow
-				"-2147483648",         // Min Int32
-				"-2147483649",         // Int32 underflow
-				"9999999999999999999", // Extreme large number
-				"0.000000001",         // Very small decimal
+				"-1",                               // Negative
+				"0",                                // Zero
+				"-0",                               // Negative zero
+				"-9999999999",                      // Large negative
+				"2147483647",                       // Max Int32
+				"2147483648",                       // Int32 overflow
+				"-2147483648",                      // Min Int32
+				"-2147483649",                      // Int32 underflow
+				"9999999999999999999",              // Extreme large number
+				"0.000000001",                      // Very small decimal
 				"99999999999999999999999999999999", // Beyond Int64
 			},
 		},
@@ -84,15 +84,15 @@ func stringPayloads(format string) []PayloadCategory {
 			Name:     "boundary",
 			Severity: "MEDIUM",
 			Payloads: []string{
-				"",                          // Empty string
-				" ",                         // Whitespace only
+				"",                         // Empty string
+				" ",                        // Whitespace only
 				"   \t\n\r  ",              // Mixed whitespace
-				strings.Repeat("A", 1000),   // Long string
-				strings.Repeat("A", 10000),  // Very long string (buffer overflow check)
+				strings.Repeat("A", 1000),  // Long string
+				strings.Repeat("A", 10000), // Very long string (buffer overflow check)
 				strings.Repeat("🔥", 500),   // Unicode stress test
-				"null",                      // String "null"
-				"undefined",                 // String "undefined"
-				"<empty>",                   // Placeholder-like
+				"null",                     // String "null"
+				"undefined",                // String "undefined"
+				"<empty>",                  // Placeholder-like
 			},
 		},
 		{
@@ -112,14 +112,14 @@ func stringPayloads(format string) []PayloadCategory {
 			Name:     "encoding",
 			Severity: "LOW",
 			Payloads: []string{
-				"<>&\"'",                     // HTML special chars
-				"%00",                        // Null byte
-				"%0A%0D",                     // CRLF injection
-				"\x00\x01\x02",              // Control characters
-				"👩‍👩‍👦‍👦🌟",                     // Complex emoji
-				"Ñoño",                       // Latin extended
-				"日本語テスト",                  // CJK characters
-				"مرحبا",                      // RTL text
+				"<>&\"'",       // HTML special chars
+				"%00",          // Null byte
+				"%0A%0D",       // CRLF injection
+				"\x00\x01\x02", // Control characters
+				"👩‍👩‍👦‍👦🌟",     // Complex emoji
+				"Ñoño",         // Latin extended
+				"日本語テスト",       // CJK characters
+				"مرحبا",        // RTL text
 			},
 		},
 	}
@@ -145,9 +145,9 @@ func stringPayloads(format string) []PayloadCategory {
 			Severity: "LOW",
 			Payloads: []string{
 				"not-a-uuid",
-				"12345678-1234-1234-1234-12345678901",  // Too short
+				"12345678-1234-1234-1234-12345678901",   // Too short
 				"12345678-1234-1234-1234-1234567890123", // Too long
-				"ZZZZZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZZZZZZZZZ", // Invalid hex
+				"ZZZZZZZZ-ZZZZ-ZZZZ-ZZZZ-ZZZZZZZZZZZZ",  // Invalid hex
 			},
 		})
 	case "date-time", "date":
@@ -202,7 +202,7 @@ func arrayPayloads() []PayloadCategory {
 				"{}",
 				"null",
 				"[" + strings.Repeat("1,", 999) + "1]", // Very long array
-				"[[[[[[[[]]]]]]]]",                       // Deeply nested
+				"[[[[[[[[]]]]]]]]",                     // Deeply nested
 			},
 		},
 	}

@@ -44,16 +44,16 @@ type FuzzResult struct {
 
 // FuzzReport is the top-level report aggregating all fuzzing results.
 type FuzzReport struct {
-	SpecURL         string       `json:"spec_url"`          // URL or path to the OpenAPI spec
-	BaseURL         string       `json:"base_url"`          // Base URL of the target API
-	TotalEndpoints  int          `json:"total_endpoints"`   // Number of endpoints discovered
-	TotalRequests   int          `json:"total_requests"`    // Total fuzz requests sent
-	TotalAnomalies  int          `json:"total_anomalies"`   // Total anomalies detected
-	CriticalCount   int          `json:"critical_count"`    // Count of CRITICAL severity findings
-	HighCount       int          `json:"high_count"`        // Count of HIGH severity findings
-	MediumCount     int          `json:"medium_count"`      // Count of MEDIUM severity findings
-	Endpoints       []Endpoint   `json:"endpoints"`         // All discovered endpoints
-	Results         []FuzzResult `json:"results"`           // All fuzz results
-	Anomalies       []FuzzResult `json:"anomalies"`         // Only anomalous results
-	DurationSeconds float64      `json:"duration_seconds"`  // Total fuzzing duration
+	SpecURL         string       `json:"spec_url"`         // URL or path to the OpenAPI spec
+	BaseURL         string       `json:"base_url"`         // Base URL of the target API
+	TotalEndpoints  int          `json:"total_endpoints"`  // Number of endpoints discovered
+	TotalRequests   int          `json:"total_requests"`   // Total fuzz requests sent
+	TotalAnomalies  int          `json:"total_anomalies"`  // Total anomalies detected
+	CriticalCount   int          `json:"critical_count"`   // Count of CRITICAL severity findings
+	HighCount       int          `json:"high_count"`       // Count of HIGH severity findings
+	MediumCount     int          `json:"medium_count"`     // Count of MEDIUM severity findings
+	Endpoints       []Endpoint   `json:"endpoints"`        // All discovered endpoints
+	Results         []FuzzResult `json:"results"`          // All fuzz results
+	Anomalies       []FuzzResult `json:"anomalies"`        // Only anomalous results
+	DurationSeconds float64      `json:"duration_seconds"` // Total fuzzing duration
 }
