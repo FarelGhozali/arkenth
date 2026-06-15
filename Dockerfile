@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 # Copy the built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
-# Build the main binary (without Wails desktop support, which requires CGO and GTK)
+# Build the main binary
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/arkenth .
 
 # Stage 3: Final image

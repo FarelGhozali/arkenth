@@ -26,7 +26,7 @@ Modern web applications require rigorous testing across multiple disciplines. Ar
 - **Accessibility (a11y) Engine:** Injects `axe-core` to scan for WCAG violations, actively mutating states (opening hidden UI components like modals and dropdowns) prior to evaluation.
 - **Deep Network Interception:** Records failing API calls, fingerprints backend WAF/Servers (Cloudflare, Express, etc.), and captures POST payloads for easier debugging.
 - **Concurrent Load Testing:** Bypasses CDN caches by deploying stateful HTTP requests with dynamic payload mutations using highly optimized Goroutines.
-- **Embedded Web UI & Wails Desktop:** Ships with an interactive real-time dashboard built in Svelte, served directly from the single Go binary. No Node.js or extra web servers required.
+- **Embedded Web UI:** Ships with an interactive real-time dashboard built in Svelte, served directly from the single Go binary. No Node.js or extra web servers required.
 
 ## Prerequisites
 
