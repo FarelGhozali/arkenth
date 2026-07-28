@@ -3,7 +3,7 @@ module github.com/FarelGhozali/arkenth
 go 1.25.6
 
 require (
-	github.com/getkin/kin-openapi v0.143.0
+	github.com/getkin/kin-openapi v0.144.0
 	github.com/playwright-community/playwright-go v0.5700.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
